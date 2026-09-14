@@ -66,6 +66,16 @@ export class Unit {
     return this.stats.moveSpeed * TILE_SIZE;
   }
 
+  /** Alcance de ataque en unidades de mundo (el dato está en celdas). */
+  get attackRange(): number {
+    return this.stats.attackRange * TILE_SIZE;
+  }
+
+  /** Altura a la que flota la barra de vida, sobre la cabeza. */
+  get barHeight(): number {
+    return this.barY;
+  }
+
   setWorldPos(x: number, z: number): void {
     this.worldX = x;
     this.worldZ = z;

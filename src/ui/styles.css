@@ -63,3 +63,16 @@ body {
   background: rgba(255, 255, 255, 0.22);
   transform: translate(-50%, -50%);
 }
+
+.fx-text {
+  position: absolute;
+  left: 0;
+  top: 0;
+  font-size: 15px;
+  font-weight: bold;
+  pointer-events: none;
+  will-change: transform, opacity;
+  text-shadow:
+    0 1px 3px #000,
+    0 0 6px #000;
+}

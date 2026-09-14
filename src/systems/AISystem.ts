@@ -1,0 +1,31 @@
+import { CombatSystem } from './CombatSystem';
+import type { EnemyUnit } from '../entities/EnemyUnit';
+import type { PlayerUnit } from '../entities/PlayerUnit';
+import type { Fx } from './Fx';
+
+export class AISystem {
+  static update(dt: number, player: PlayerUnit, enemies: EnemyUnit[], fx?: Fx): void {
+    if (!player.isAlive) {
+      return;
+    }
+
+    for (const enemy of enemies) {
+      if (!enemy.isAlive) {
+        continue;
+      }
+
+      const dx = player.worldX - enemy.worldX;
+      const dz = player.worldZ - enemy.worldZ;
+      const dist = Math.hypot(dx, dz);
+
+      if (dist <= enemy.attackRange) {
+        enemy.setFacing(dx, dz);
+        CombatSystem.attack(enemy, player, fx);
+      } else if (dist <= enemy.aggroRange && dist > 0) {
+        enemy.setFacing(dx, dz);
+        const step = enemy.worldSpeed * dt;
+        enemy.moveWorld((dx / dist) * step, (dz / dist) * step);
+      }
+    }
+  }
+}
