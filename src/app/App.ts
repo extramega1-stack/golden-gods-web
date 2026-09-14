@@ -8,6 +8,8 @@ import { InputManager } from '../core/InputManager';
 import { Joystick } from '../ui/Joystick';
 import { HeroSelect } from '../ui/HeroSelect';
 import { World } from './World';
+import { AssetLoader } from '../assets/AssetLoader';
+import { ALL_MODEL_IDS } from '../assets/manifest';
 import { getGod } from '../data/gods';
 import { SaveManager, type SaveData } from '../core/SaveManager';
 import { STARTER_SPAWN, STARTER_ZONE } from '../data/zones';
@@ -28,9 +30,12 @@ export class App {
   private readonly input: InputManager;
   private readonly uiHost: HTMLElement;
   private readonly refs: WorldRefs;
+  private readonly loader = new AssetLoader();
 
   private world: World | null = null;
   private menu: HeroSelect | null = null;
+  private loading: HTMLDivElement | null = null;
+  private starting = false;
   private idleTime = 0;
   private readonly spawn: { x: number; z: number };
   private readonly spawnY: number;
@@ -48,6 +53,9 @@ export class App {
     this.uiHost = document.getElementById('ui') ?? document.body;
     this.input = new InputManager(new Joystick(this.uiHost));
 
+    // Se van cargando mientras el jugador mira el menú.
+    void this.loader.preload(ALL_MODEL_IDS);
+
     this.spawn = cellToWorld(STARTER_SPAWN.col, STARTER_SPAWN.row);
     this.spawnY = levelToWorldY(this.zone.nav.levelAt(this.spawn.x, this.spawn.z));
     this.rig.snapTo(this.spawn.x, this.spawnY, this.spawn.z);
@@ -62,17 +70,31 @@ export class App {
     const save = SaveManager.load();
     this.menu = new HeroSelect(
       this.uiHost,
-      (godId) => this.startGame(godId, null),
+      (godId) => void this.startGame(godId, null),
       save,
       () => {
         if (save) {
-          this.startGame(save.godId, save);
+          void this.startGame(save.godId, save);
         }
       }
     );
   }
 
-  private startGame(godId: string, save: SaveData | null): void {
+  private async startGame(godId: string, save: SaveData | null): Promise<void> {
+    if (this.starting) {
+      return;
+    }
+    this.starting = true;
+
+    try {
+      if (!ALL_MODEL_IDS.every((id) => this.loader.isReady(id))) {
+        this.showLoading();
+        await this.loader.preload(ALL_MODEL_IDS);
+      }
+    } finally {
+      this.hideLoading();
+    }
+
     this.menu?.hide();
     this.menu = null;
     this.world?.dispose();
@@ -82,10 +104,19 @@ export class App {
       SaveManager.clear();
     }
 
-    const world = new World(this.refs, this.rig, this.uiHost, this.input, getGod(godId), save);
-    world.onRestart = (loaded) => this.startGame(loaded.godId, loaded);
+    const world = new World(
+      this.refs,
+      this.rig,
+      this.uiHost,
+      this.input,
+      getGod(godId),
+      save,
+      this.loader
+    );
+    world.onRestart = (loaded) => void this.startGame(loaded.godId, loaded);
     world.onExit = () => this.returnToMenu();
     this.world = world;
+    this.starting = false;
   }
 
   private returnToMenu(): void {
@@ -93,6 +124,22 @@ export class App {
     this.world = null;
     this.idleTime = 0;
     this.showMenu();
+  }
+
+  private showLoading(): void {
+    if (this.loading) {
+      return;
+    }
+    const el = document.createElement('div');
+    el.id = 'loading';
+    el.textContent = 'Cargando modelos…';
+    this.uiHost.appendChild(el);
+    this.loading = el;
+  }
+
+  private hideLoading(): void {
+    this.loading?.remove();
+    this.loading = null;
   }
 
   private update(dt: number): void {

@@ -410,3 +410,16 @@ body {
   max-height: 22vh;
   overflow: auto;
 }
+
+/* --- Aviso de carga compartida --- */
+#loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 14, 19, 0.85);
+  color: #e8d9a0;
+  font-size: 15px;
+  letter-spacing: 1px;
+}

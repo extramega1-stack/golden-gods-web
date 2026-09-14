@@ -10,3 +10,6 @@ ios/
 
 # Bundle temporal de los tests
 tests/.bundle/
+
+# Caché de modelos descargados por scripts/prepare-models.mjs
+.model-cache/

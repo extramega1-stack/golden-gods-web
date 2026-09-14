@@ -7,6 +7,13 @@ export interface UnitMeshOptions {
   markerColor?: number;
 }
 
+/** Envuelve un modelo cargado para que la entidad pueda rotarlo como una primitiva. */
+export function wrapModel(root: THREE.Object3D): THREE.Group {
+  const group = new THREE.Group();
+  group.add(root);
+  return group;
+}
+
 /**
  * Primitivas 3D por código: una cápsula como cuerpo y un cono delante que marca hacia
  * dónde mira la unidad. Sustituible por modelos reales sin tocar la lógica.

@@ -32,6 +32,7 @@ export class SkillSystem {
 
     player.stats.mp -= skill.cost;
     player.skillReadyAt[skill.id] = now + skill.cooldown * 1000;
+    player.animation?.trigger('cast');
 
     const damage = Math.round(player.stats.attack * skill.damageMult);
     switch (skill.effect) {

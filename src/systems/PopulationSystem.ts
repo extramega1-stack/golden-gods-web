@@ -1,6 +1,8 @@
 import { TILE_SIZE } from '../config/constants';
 import { PopulationHero3D } from '../entities/PopulationHero3D';
+import { POPULATION_MODELS } from '../assets/manifest';
 import type { WorldRefs } from '../entities/Unit';
+import type { ModelProvider } from '../entities/ModelProvider';
 import type { Wc3Camera } from '../engine/Wc3Camera';
 
 const NAMES = [
@@ -24,7 +26,13 @@ const COLORS = [0x8fd0ff, 0xe0a0c0, 0xa0e0c0, 0xc0b0ff, 0xffc890, 0x90d0d0];
 export class PopulationSystem {
   private readonly heroes: PopulationHero3D[] = [];
 
-  constructor(refs: WorldRefs, rig: Wc3Camera, host: HTMLElement, count: number) {
+  constructor(
+    refs: WorldRefs,
+    rig: Wc3Camera,
+    host: HTMLElement,
+    count: number,
+    models?: ModelProvider | null
+  ) {
     for (let i = 0; i < count; i++) {
       const spot = PopulationSystem.randomSpawn(refs);
       this.heroes.push(
@@ -35,7 +43,9 @@ export class PopulationSystem {
           spot.x,
           spot.z,
           NAMES[i % NAMES.length],
-          COLORS[i % COLORS.length]
+          COLORS[i % COLORS.length],
+          models,
+          POPULATION_MODELS[i % POPULATION_MODELS.length]
         )
       );
     }

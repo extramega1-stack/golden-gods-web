@@ -1,6 +1,8 @@
-import { createUnitMesh } from './MeshFactory';
+import { createUnitMesh, wrapModel } from './MeshFactory';
 import { Unit, type WorldRefs } from './Unit';
 import { ProgressionSystem } from '../systems/ProgressionSystem';
+import { GOD_MODELS, MODEL_HEIGHTS } from '../assets/manifest';
+import type { ModelProvider } from './ModelProvider';
 import type {
   Buff,
   GodDef,
@@ -35,14 +37,30 @@ export class PlayerUnit extends Unit {
   readonly baseStats: Stats;
   buffs: Buff[] = [];
 
-  constructor(refs: WorldRefs, x: number, z: number, god: GodDef) {
-    const mesh = createUnitMesh({
-      color: god.color,
-      radius: BODY_RADIUS,
-      height: BODY_HEIGHT,
-      markerColor: 0xffffff,
-    });
+  constructor(
+    refs: WorldRefs,
+    x: number,
+    z: number,
+    god: GodDef,
+    models?: ModelProvider | null
+  ) {
+    const modelId = GOD_MODELS[god.id];
+    const instantiated = modelId ? models?.instantiate(modelId, MODEL_HEIGHTS.god) ?? null : null;
+
+    const mesh = instantiated
+      ? wrapModel(instantiated.root)
+      : createUnitMesh({
+          color: god.color,
+          radius: BODY_RADIUS,
+          height: BODY_HEIGHT,
+          markerColor: 0xffffff,
+        });
+
     super(refs, x, z, mesh, BAR_HEIGHT, { ...god.baseStats });
+    if (instantiated) {
+      this.animation = instantiated.controller;
+    }
+
     this.god = god;
     this.baseStats = { ...god.baseStats };
     this.skills = [...god.skills];

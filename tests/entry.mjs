@@ -11,6 +11,17 @@ export { Unit } from '../src/entities/Unit.ts';
 export { PlayerUnit } from '../src/entities/PlayerUnit.ts';
 export { GODS, getGod } from '../src/data/gods.ts';
 export { ENEMIES } from '../src/data/enemies.ts';
+export {
+  ANIMATION_CANDIDATES,
+  MODEL_HEIGHTS,
+  GOD_MODELS,
+  ENEMY_MODELS,
+  BOT_MODELS,
+  POPULATION_MODELS,
+  ALL_MODEL_IDS,
+  pickAnimation,
+  resolveAnimations,
+} from '../src/assets/manifest.ts';
 export { CombatSystem } from '../src/systems/CombatSystem.ts';
 export { AISystem } from '../src/systems/AISystem.ts';
 export { SpawnSystem } from '../src/systems/SpawnSystem.ts';

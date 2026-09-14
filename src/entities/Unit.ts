@@ -2,6 +2,7 @@ import type * as THREE from 'three';
 import { TILE_SIZE } from '../config/constants';
 import { levelToWorldY } from '../world/heightmap';
 import { HealthBar } from './HealthBar';
+import type { AnimationController } from './AnimationController';
 import type { Navigation } from '../world/Navigation';
 import type { SceneRoot } from '../engine/SceneRoot';
 import type { Stats } from '../types';
@@ -13,7 +14,8 @@ export interface WorldRefs {
 
 /**
  * Entidad base agnóstica del motor: guarda posición, stats y vida, y expone un handle
- * de Three.js para dibujarse. Toda la lógica vive aquí, no en el motor de render.
+ * de Three.js (primitiva o modelo animado) para dibujarse. Toda la lógica vive aquí,
+ * no en el motor de render.
  */
 export class Unit {
   worldX = 0;
@@ -25,11 +27,15 @@ export class Unit {
   facing = { x: 0, z: 1 };
   onDeath?: (unit: Unit) => void;
 
+  /** Presente solo si la entidad se creó con un modelo; si no, se usan primitivas. */
+  animation?: AnimationController;
+
   readonly mesh: THREE.Group;
 
   protected readonly refs: WorldRefs;
   private readonly bar: HealthBar;
   private readonly barY: number;
+  private movedThisFrame = false;
 
   constructor(
     refs: WorldRefs,
@@ -95,13 +101,33 @@ export class Unit {
   moveWorld(dx: number, dz: number): void {
     const level = this.terrainLevel;
     const nav = this.refs.nav;
+    const beforeX = this.worldX;
+    const beforeZ = this.worldZ;
+
     if (dx !== 0 && nav.isAreaWalkable(this.worldX + dx, this.worldZ, this.radius, level)) {
       this.worldX += dx;
     }
     if (dz !== 0 && nav.isAreaWalkable(this.worldX, this.worldZ + dz, this.radius, level)) {
       this.worldZ += dz;
     }
-    this.syncTransform();
+
+    if (this.worldX !== beforeX || this.worldZ !== beforeZ) {
+      this.movedThisFrame = true;
+      this.syncTransform();
+    }
+  }
+
+  /**
+   * Avanza el mixer y elige la animación de locomoción según si se movió este frame.
+   * Hay que llamarlo después de mover a la unidad.
+   */
+  updateAnimation(dt: number): void {
+    if (!this.animation) {
+      return;
+    }
+    this.animation.setLocomotion(this.movedThisFrame ? 'run' : 'idle');
+    this.movedThisFrame = false;
+    this.animation.update(dt);
   }
 
   updateBar(camera: THREE.Camera): void {
@@ -117,6 +143,8 @@ export class Unit {
     this.bar.setRatio(this.hpRatio);
     if (this.stats.hp <= 0) {
       this.die();
+    } else {
+      this.animation?.trigger('hit');
     }
     return damage;
   }
@@ -126,8 +154,14 @@ export class Unit {
       return;
     }
     this.isAlive = false;
-    this.mesh.visible = false;
     this.bar.setVisible(false);
+    if (this.animation) {
+      // Con modelo, la muerte se ve: se reproduce la animación y el mundo decide
+      // cuándo retirar la malla.
+      this.animation.die();
+    } else {
+      this.mesh.visible = false;
+    }
     this.onDeath?.(this);
   }
 
@@ -138,10 +172,12 @@ export class Unit {
     this.mesh.visible = true;
     this.bar.setVisible(true);
     this.bar.setRatio(1);
+    this.animation?.reset();
     this.setWorldPos(x, z);
   }
 
   dispose(): void {
+    this.animation?.dispose();
     this.mesh.removeFromParent();
     this.bar.dispose();
   }

@@ -17,6 +17,7 @@ export class CombatSystem {
       COMBAT.minDamage,
       attacker.stats.attack - defender.stats.defense
     );
+    attacker.animation?.trigger('attack');
     CombatSystem.damage(defender, reduced, fx);
     return true;
   }

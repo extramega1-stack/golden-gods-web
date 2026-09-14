@@ -1,13 +1,16 @@
 import * as THREE from 'three';
 import { TILE_SIZE } from '../config/constants';
 import { levelToWorldY } from '../world/heightmap';
-import { createUnitMesh } from './MeshFactory';
+import { createUnitMesh, wrapModel } from './MeshFactory';
+import type { AnimationController } from './AnimationController';
+import type { ModelProvider } from './ModelProvider';
 import type { WorldRefs } from './Unit';
 import type { Wc3Camera } from '../engine/Wc3Camera';
 
 const MAX_LEVEL = 9;
 const LEVEL_INTERVAL_MS = 18000;
 const SPEED = 2.6 * TILE_SIZE;
+const MODEL_HEIGHT = 2.9;
 
 /**
  * Héroe de la población simulada: deambula por la zona, sube de nivel con el tiempo y
@@ -18,7 +21,8 @@ export class PopulationHero3D {
   worldZ: number;
   level = 1;
 
-  private readonly mesh: THREE.Group;
+  private readonly mesh: THREE.Object3D;
+  private readonly animation?: AnimationController;
   private readonly label: HTMLDivElement;
   private readonly projected = new THREE.Vector3();
   private readonly refs: WorldRefs;
@@ -26,6 +30,7 @@ export class PopulationHero3D {
   private target: { x: number; z: number };
   private retargetAt = 0;
   private levelUpAt = 0;
+  private moved = false;
   private disposed = false;
 
   constructor(
@@ -35,14 +40,22 @@ export class PopulationHero3D {
     x: number,
     z: number,
     private readonly heroName: string,
-    color: number
+    color: number,
+    models?: ModelProvider | null,
+    modelId?: string
   ) {
     this.refs = refs;
     this.rig = rig;
     this.worldX = x;
     this.worldZ = z;
 
-    this.mesh = createUnitMesh({ color, radius: 0.85, height: 2.9, markerColor: 0x2a2438 });
+    const instantiated = modelId ? models?.instantiate(modelId, MODEL_HEIGHT) ?? null : null;
+    this.mesh = instantiated
+      ? wrapModel(instantiated.root)
+      : createUnitMesh({ color, radius: 0.85, height: 2.9, markerColor: 0x2a2438 });
+    if (instantiated) {
+      this.animation = instantiated.controller;
+    }
     refs.root.add(this.mesh);
 
     this.label = document.createElement('div');
@@ -67,6 +80,7 @@ export class PopulationHero3D {
     const dz = this.target.z - this.worldZ;
     const dist = Math.hypot(dx, dz);
 
+    this.moved = false;
     if (dist > 0.3) {
       const step = Math.min(SPEED * dt, dist);
       this.moveStep((dx / dist) * step, (dz / dist) * step);
@@ -82,11 +96,17 @@ export class PopulationHero3D {
       }
     }
 
+    if (this.animation) {
+      this.animation.setLocomotion(this.moved ? 'run' : 'idle');
+      this.animation.update(dt);
+    }
+
     this.sync();
   }
 
   dispose(): void {
     this.disposed = true;
+    this.animation?.dispose();
     this.mesh.removeFromParent();
     this.label.remove();
   }
@@ -96,16 +116,20 @@ export class PopulationHero3D {
     const level = nav.levelAt(this.worldX, this.worldZ);
     if (dx !== 0 && nav.isAreaWalkable(this.worldX + dx, this.worldZ, 0.8, level)) {
       this.worldX += dx;
+      this.moved = true;
     }
     if (dz !== 0 && nav.isAreaWalkable(this.worldX, this.worldZ + dz, 0.8, level)) {
       this.worldZ += dz;
+      this.moved = true;
+    }
+    if (this.moved) {
+      this.mesh.rotation.y = Math.atan2(dx, dz);
     }
   }
 
   private sync(): void {
     const y = levelToWorldY(this.refs.nav.levelAt(this.worldX, this.worldZ));
     this.mesh.position.set(this.worldX, y, this.worldZ);
-    this.mesh.rotation.y += 0.01;
 
     this.projected.set(this.worldX, y + 4.2, this.worldZ).project(this.rig.camera);
     const screenX = (this.projected.x * 0.5 + 0.5) * window.innerWidth;

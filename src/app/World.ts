@@ -33,6 +33,8 @@ import { TILE_SIZE } from '../config/constants';
 import type { InputManager } from '../core/InputManager';
 import type { Wc3Camera } from '../engine/Wc3Camera';
 import type { WorldRefs } from '../entities/Unit';
+import type { ModelProvider } from '../entities/ModelProvider';
+import type { AnimationController } from '../entities/AnimationController';
 import type { GodDef, ItemSlot, SkillDef, SpawnDef } from '../types';
 
 const HP_REGEN_PER_SEC = 0.01;
@@ -57,6 +59,8 @@ export class World {
 
   private pickups: Pickup3D[] = [];
   private projectiles: Projectile3D[] = [];
+  /** Mixers de enemigos que están muriendo: siguen avanzando hasta disolverse. */
+  private readonly dyingAnimations: { controller: AnimationController; remaining: number }[] = [];
   private playerRespawnAt = 0;
   private notice = '';
   private fps = 0;
@@ -75,7 +79,8 @@ export class World {
     uiHost: HTMLElement,
     private readonly input: InputManager,
     private readonly god: GodDef,
-    save: SaveData | null
+    save: SaveData | null,
+    private readonly models: ModelProvider | null = null
   ) {
     this.container = document.createElement('div');
     this.container.className = 'world-ui';
@@ -84,7 +89,7 @@ export class World {
     this.fx = new Fx(this.container, this.refs.root, this.rig);
 
     const spawn = cellToWorld(STARTER_SPAWN.col, STARTER_SPAWN.row);
-    this.player = new PlayerUnit(this.refs, spawn.x, spawn.z, god);
+    this.player = new PlayerUnit(this.refs, spawn.x, spawn.z, god, models);
     this.player.setFacing(0, 1);
     this.player.onDeath = () => {
       this.playerRespawnAt = performance.now() + PLAYER_RESPAWN_SECONDS * 1000;
@@ -117,9 +122,9 @@ export class World {
     ];
     PARTY_BOTS.forEach((def, index) => {
       const spot = botSpots[index % botSpots.length];
-      this.bots.push(new PartyBotUnit(this.refs, spot.x, spot.z, def));
+      this.bots.push(new PartyBotUnit(this.refs, spot.x, spot.z, def, models));
     });
-    this.population = new PopulationSystem(this.refs, this.rig, this.container, 6);
+    this.population = new PopulationSystem(this.refs, this.rig, this.container, 6, models);
 
     this.hud = new Hud(this.container);
     this.skillBar = new SkillBar(
@@ -174,7 +179,7 @@ export class World {
 
   private createEnemy(def: SpawnDef): EnemyUnit {
     const cell = cellToWorld(def.col, def.row);
-    const enemy = new EnemyUnit(this.refs, cell.x, cell.z, ENEMIES[def.enemyId]);
+    const enemy = new EnemyUnit(this.refs, cell.x, cell.z, ENEMIES[def.enemyId], this.models);
     enemy.onDeath = () => this.onEnemyDeath(enemy);
     this.enemies.push(enemy);
     return enemy;
@@ -197,11 +202,18 @@ export class World {
     }
 
     this.fx.ring(enemy.worldX, enemy.worldY, enemy.worldZ, 3.2, enemy.def.color, 0.35);
-    this.fx.dissolve(enemy.mesh, 0.3);
 
     const index = this.enemies.indexOf(enemy);
     if (index !== -1) {
       this.enemies.splice(index, 1);
+    }
+
+    // Con modelo se deja ver la animación de muerte antes de disolverlo; sin él, inmediato.
+    if (enemy.animation) {
+      this.dyingAnimations.push({ controller: enemy.animation, remaining: 0.8 });
+      window.setTimeout(() => this.fx.dissolve(enemy.mesh, 0.35), 800);
+    } else {
+      this.fx.dissolve(enemy.mesh, 0.3);
     }
 
     if (this.talentPanel.isOpen()) {
@@ -386,6 +398,24 @@ export class World {
     PartyAISystem.update(dt, this.player, this.bots, this.enemies, this.fx);
     this.population.update(dt, now);
 
+    // Con todo el movimiento ya resuelto, se elige animación de cada unidad.
+    this.player.updateAnimation(dt);
+    for (const enemy of this.enemies) {
+      enemy.updateAnimation(dt);
+    }
+    for (const bot of this.bots) {
+      bot.updateAnimation(dt);
+    }
+
+    for (let i = this.dyingAnimations.length - 1; i >= 0; i--) {
+      const dying = this.dyingAnimations[i];
+      dying.remaining -= dt;
+      dying.controller.update(dt);
+      if (dying.remaining <= 0) {
+        this.dyingAnimations.splice(i, 1);
+      }
+    }
+
     for (const projectile of this.projectiles) {
       projectile.update(dt, this.enemies, this.fx);
     }
@@ -457,6 +487,7 @@ export class World {
     this.population.dispose();
     this.enemies.length = 0;
     this.bots.length = 0;
+    this.dyingAnimations.length = 0;
     this.projectiles = [];
     this.pickups = [];
     this.container.remove();
