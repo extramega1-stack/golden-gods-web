@@ -12,15 +12,12 @@ comparar o recuperar algo.
 
 ## Estado
 
-Completadas las fases 0–7 de la migración a 3D: base Three.js, terreno con alturas y
-acantilados, héroe y cámara, combate, progresión y UI, selección de dioses, botín y herrería, y
-jefe con fases.
+Completadas las **10 fases** de la migración a 3D: base Three.js, terreno con alturas y
+acantilados, héroe y cámara, combate, progresión y UI, selección de dioses, botín y herrería,
+jefe con fases, bots de party y población simulada, persistencia, y PWA y APK revalidados.
 
-Pendientes: **Fase 8** (bots de party y población simulada), **Fase 9** (persistencia: guardado
-local y código de héroe) y **Fase 10** (revalidar PWA y APK).
-
-> Nota: el guardado (`SaveManager`) está implementado y probado, pero todavía **no está conectado
-> a la interfaz**: en la versión 3D actual cada partida empieza de cero.
+El juego guarda solo cada 15 segundos y al cerrar la pestaña. Si hay partida, el menú ofrece
+**CONTINUAR**; elegir un dios nuevo la descarta.
 
 ## Requisitos
 
@@ -58,6 +55,7 @@ npm run icons      # regenera los iconos PWA en public/icons/
 | Talentos | `T` | — |
 | Equipo y mochila | `I` | — |
 | Herrería (junto al NPC) | `G` | botón que aparece al acercarte |
+| Partida (guardar, exportar, importar, borrar) | `O` | — |
 
 Cada dios tiene sus propias tres habilidades (área, proyectil, cura, embestida o buff).
 
@@ -133,17 +131,19 @@ compilar pasa `npm test`.
 - `progression` — niveles, talentos, coste y cooldown de habilidades, área, cura, buffs y proyectil.
 - `loot` — botín, equipar y quitar, mejoras y escalado.
 - `boss` — fases, aviso del golpe sísmico y esquiva.
+- `party` — compañeros que siguen, entran en combate y respetan la correa del héroe.
+- `save` — guardado, continuar, código de héroe, rechazo de códigos corruptos y partida limpia.
 
 ## Limitaciones conocidas
 
-- Los enemigos y el jefe atacan solo al jugador, no a los compañeros de party (aún no existen).
+- Los enemigos y el jefe atacan solo al jugador, no a los compañeros de party: los bots ayudan
+  pero no reciben daño.
 - El arte es placeholder generado por código (cápsulas, conos y cajas), sustituible por modelos
   reales sin tocar la lógica.
 - El balance no está probado en partidas largas; los números de `data/` son un punto de partida.
-- Sin multijugador real: lo "cooperativo" serán bots.
+- Sin multijugador real: lo "cooperativo" son los bots.
 
 ## Backlog
 
-Bots de party y población (fase 8), persistencia y código de héroe (fase 9), PWA y APK
-revalidados (fase 10), y más adelante: niebla de guerra, rotación de cámara, animaciones
-esqueléticas, quests, mazmorras, rebirth y arena PvP.
+Niebla de guerra, rotación de cámara, animaciones esqueléticas y modelos reales, quests,
+mazmorras, rebirth, arena PvP y más dioses y zonas.

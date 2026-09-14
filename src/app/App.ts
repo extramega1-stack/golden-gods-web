@@ -9,7 +9,9 @@ import { Joystick } from '../ui/Joystick';
 import { HeroSelect } from '../ui/HeroSelect';
 import { World } from './World';
 import { getGod } from '../data/gods';
+import { SaveManager, type SaveData } from '../core/SaveManager';
 import { STARTER_SPAWN, STARTER_ZONE } from '../data/zones';
+import type { WorldRefs } from '../entities/Unit';
 
 const IDLE_ORBIT_RADIUS = 14;
 
@@ -25,8 +27,10 @@ export class App {
   private readonly zone: Zone;
   private readonly input: InputManager;
   private readonly uiHost: HTMLElement;
+  private readonly refs: WorldRefs;
 
   private world: World | null = null;
+  private menu: HeroSelect | null = null;
   private idleTime = 0;
   private readonly spawn: { x: number; z: number };
   private readonly spawnY: number;
@@ -39,6 +43,7 @@ export class App {
 
     this.zone = new Zone(STARTER_ZONE);
     this.root.add(this.zone.mesh);
+    this.refs = { root: this.root, nav: this.zone.nav };
 
     this.uiHost = document.getElementById('ui') ?? document.body;
     this.input = new InputManager(new Joystick(this.uiHost));
@@ -47,21 +52,47 @@ export class App {
     this.spawnY = levelToWorldY(this.zone.nav.levelAt(this.spawn.x, this.spawn.z));
     this.rig.snapTo(this.spawn.x, this.spawnY, this.spawn.z);
 
-    new HeroSelect(this.uiHost, (godId) => this.startGame(godId));
+    this.showMenu();
 
     this.loop = new Loop((dt) => this.update(dt));
     this.loop.start();
   }
 
-  private startGame(godId: string): void {
-    this.world?.dispose();
-    this.world = new World(
-      { root: this.root, nav: this.zone.nav },
-      this.rig,
+  private showMenu(): void {
+    const save = SaveManager.load();
+    this.menu = new HeroSelect(
       this.uiHost,
-      this.input,
-      getGod(godId)
+      (godId) => this.startGame(godId, null),
+      save,
+      () => {
+        if (save) {
+          this.startGame(save.godId, save);
+        }
+      }
     );
+  }
+
+  private startGame(godId: string, save: SaveData | null): void {
+    this.menu?.hide();
+    this.menu = null;
+    this.world?.dispose();
+
+    // Empezar de cero descarta la partida anterior.
+    if (!save) {
+      SaveManager.clear();
+    }
+
+    const world = new World(this.refs, this.rig, this.uiHost, this.input, getGod(godId), save);
+    world.onRestart = (loaded) => this.startGame(loaded.godId, loaded);
+    world.onExit = () => this.returnToMenu();
+    this.world = world;
+  }
+
+  private returnToMenu(): void {
+    this.world?.dispose();
+    this.world = null;
+    this.idleTime = 0;
+    this.showMenu();
   }
 
   private update(dt: number): void {

@@ -1,10 +1,16 @@
-import { GODS, roleLabel } from '../data/gods';
+import { GODS, getGod, roleLabel } from '../data/gods';
+import type { SaveData } from '../core/SaveManager';
 
 /** Pantalla de selección de dios en DOM. */
 export class HeroSelect {
   private readonly root: HTMLDivElement;
 
-  constructor(host: HTMLElement, onSelect: (godId: string) => void) {
+  constructor(
+    host: HTMLElement,
+    onSelect: (godId: string) => void,
+    save: SaveData | null,
+    onContinue: () => void
+  ) {
     this.root = document.createElement('div');
     this.root.id = 'menu';
 
@@ -14,6 +20,18 @@ export class HeroSelect {
     const subtitle = document.createElement('p');
     subtitle.className = 'menu-subtitle';
     subtitle.textContent = 'Elige tu dios — pulsa 1-4 o toca una carta';
+
+    this.root.append(title, subtitle);
+
+    if (save) {
+      const god = getGod(save.godId);
+      const resume = document.createElement('button');
+      resume.type = 'button';
+      resume.className = 'continue-button';
+      resume.textContent = `CONTINUAR — ${god.name} · Nv ${save.level} · ${save.gold} oro`;
+      resume.addEventListener('click', () => onContinue());
+      this.root.appendChild(resume);
+    }
 
     const grid = document.createElement('div');
     grid.className = 'menu-grid';
@@ -48,7 +66,7 @@ export class HeroSelect {
       grid.appendChild(card);
     });
 
-    this.root.append(title, subtitle, grid);
+    this.root.append(grid);
     host.appendChild(this.root);
 
     window.addEventListener('keydown', this.onKeyDown);

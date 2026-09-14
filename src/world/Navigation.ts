@@ -9,6 +9,14 @@ import { Tile, type ZoneMap } from '../types';
 export class Navigation {
   constructor(private readonly zone: ZoneMap) {}
 
+  get cols(): number {
+    return this.zone.cols;
+  }
+
+  get rows(): number {
+    return this.zone.rows;
+  }
+
   inBounds(col: number, row: number): boolean {
     return col >= 0 && row >= 0 && col < this.zone.cols && row < this.zone.rows;
   }

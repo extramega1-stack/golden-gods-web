@@ -3,15 +3,21 @@ import { PlayerUnit } from '../entities/PlayerUnit';
 import { EnemyUnit } from '../entities/EnemyUnit';
 import { Projectile3D } from '../entities/Projectile3D';
 import { Pickup3D } from '../entities/Pickup3D';
+import { PartyBotUnit } from '../entities/PartyBotUnit';
 import { createUnitMesh } from '../entities/MeshFactory';
 import { Hud } from '../ui/Hud';
 import { SkillBar } from '../ui/SkillBar';
 import { TalentPanel } from '../ui/TalentPanel';
 import { InventoryPanel } from '../ui/InventoryPanel';
+import { SavePanel } from '../ui/SavePanel';
+import { SaveManager, type SaveData } from '../core/SaveManager';
+import { applySaveToHero } from '../core/heroSave';
 import { Fx } from '../systems/Fx';
 import { CombatSystem } from '../systems/CombatSystem';
 import { AISystem } from '../systems/AISystem';
 import { SpawnSystem } from '../systems/SpawnSystem';
+import { PartyAISystem } from '../systems/PartyAISystem';
+import { PopulationSystem } from '../systems/PopulationSystem';
 import { SkillSystem } from '../systems/SkillSystem';
 import { ProgressionSystem } from '../systems/ProgressionSystem';
 import { TalentSystem } from '../systems/TalentSystem';
@@ -19,6 +25,7 @@ import { InventorySystem } from '../systems/InventorySystem';
 import { LootSystem } from '../systems/LootSystem';
 import { SKILLS } from '../data/skills';
 import { ENEMIES } from '../data/enemies';
+import { PARTY_BOTS } from '../data/bots';
 import { getItem } from '../data/items';
 import { PLAYER_RESPAWN_SECONDS, expToNext } from '../data/balance';
 import { STARTER_SMITH, STARTER_SPAWN, STARTER_SPAWNS, regionAt } from '../data/zones';
@@ -42,8 +49,11 @@ export class World {
   private readonly skillBar: SkillBar;
   private readonly talentPanel: TalentPanel;
   private readonly inventoryPanel: InventoryPanel;
+  private readonly savePanel: SavePanel;
   private readonly smithButton: HTMLButtonElement;
   private readonly smith: { x: number; z: number };
+  private readonly bots: PartyBotUnit[] = [];
+  private readonly population: PopulationSystem;
 
   private pickups: Pickup3D[] = [];
   private projectiles: Projectile3D[] = [];
@@ -52,14 +62,20 @@ export class World {
   private fps = 0;
   private fpsAccum = 0;
   private fpsFrames = 0;
+  private saveAccum = 0;
   private disposed = false;
+
+  /** Los pone App: reiniciar con otro guardado, o volver al menú. */
+  onRestart?: (save: SaveData) => void;
+  onExit?: () => void;
 
   constructor(
     private readonly refs: WorldRefs,
     private readonly rig: Wc3Camera,
     uiHost: HTMLElement,
     private readonly input: InputManager,
-    private readonly god: GodDef
+    private readonly god: GodDef,
+    save: SaveData | null
   ) {
     this.container = document.createElement('div');
     this.container.className = 'world-ui';
@@ -73,6 +89,10 @@ export class World {
     this.player.onDeath = () => {
       this.playerRespawnAt = performance.now() + PLAYER_RESPAWN_SECONDS * 1000;
     };
+
+    if (save) {
+      applySaveToHero(this.player, save);
+    }
 
     this.spawnSystem = new SpawnSystem(STARTER_SPAWNS, (def) => this.createEnemy(def));
 
@@ -91,6 +111,16 @@ export class World {
     );
     this.refs.root.add(smithMesh);
 
+    const botSpots = [
+      cellToWorld(STARTER_SPAWN.col - 1, STARTER_SPAWN.row),
+      cellToWorld(STARTER_SPAWN.col + 1, STARTER_SPAWN.row),
+    ];
+    PARTY_BOTS.forEach((def, index) => {
+      const spot = botSpots[index % botSpots.length];
+      this.bots.push(new PartyBotUnit(this.refs, spot.x, spot.z, def));
+    });
+    this.population = new PopulationSystem(this.refs, this.rig, this.container, 6);
+
     this.hud = new Hud(this.container);
     this.skillBar = new SkillBar(
       this.container,
@@ -103,6 +133,12 @@ export class World {
       (uid) => this.equipItem(uid),
       (slot) => this.unequipItem(slot)
     );
+    this.savePanel = new SavePanel(this.container, [
+      { label: 'Guardar ahora', onClick: () => this.saveNowAndReport() },
+      { label: 'Exportar código de héroe', onClick: () => this.exportHero() },
+      { label: 'Importar código de héroe', onClick: () => this.importHero() },
+      { label: 'Borrar partida y volver al menú', onClick: () => this.deleteSave() },
+    ]);
 
     this.smithButton = document.createElement('button');
     this.smithButton.type = 'button';
@@ -112,6 +148,8 @@ export class World {
     this.container.appendChild(this.smithButton);
 
     window.addEventListener('keydown', this.onKeyDown);
+    // Guardar al cerrar la pestaña o la app; el autoguardado cubre el resto.
+    window.addEventListener('beforeunload', this.onBeforeUnload);
     this.rig.snapTo(this.player.worldX, this.player.worldY, this.player.worldZ);
   }
 
@@ -129,6 +167,8 @@ export class World {
       this.inventoryPanel.toggle(this.player);
     } else if (key === 'g') {
       this.trySmith();
+    } else if (key === 'o') {
+      this.savePanel.toggle();
     }
   };
 
@@ -216,6 +256,52 @@ export class World {
     this.talentPanel.refresh(this.player);
   }
 
+  private saveNow(): void {
+    if (this.disposed) {
+      return;
+    }
+    SaveManager.persist(SaveManager.capture(this.player, this.god.id));
+  }
+
+  private saveNowAndReport(): void {
+    this.saveNow();
+    this.savePanel.setStatus('Partida guardada');
+  }
+
+  private exportHero(): void {
+    const code = SaveManager.exportCode(SaveManager.capture(this.player, this.god.id));
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(code).catch(() => undefined);
+    }
+    this.savePanel.setStatus(`Código copiado al portapapeles:\n${code}`);
+  }
+
+  private importHero(): void {
+    const code = window.prompt('Pega el código de héroe:');
+    if (!code) {
+      return;
+    }
+    const loaded = SaveManager.importCode(code);
+    if (!loaded) {
+      this.savePanel.setStatus('Código inválido o corrupto');
+      return;
+    }
+    SaveManager.persist(loaded);
+    this.onRestart?.(loaded);
+  }
+
+  private deleteSave(): void {
+    if (!window.confirm('¿Borrar la partida guardada y volver al menú?')) {
+      return;
+    }
+    SaveManager.clear();
+    this.onExit?.();
+  }
+
+  private readonly onBeforeUnload = (): void => {
+    this.saveNow();
+  };
+
   private equipItem(uid: string): void {
     InventorySystem.equip(this.player, uid);
     this.inventoryPanel.refresh(this.player);
@@ -297,6 +383,8 @@ export class World {
     }
 
     AISystem.update(dt, this.player, this.enemies, this.fx);
+    PartyAISystem.update(dt, this.player, this.bots, this.enemies, this.fx);
+    this.population.update(dt, now);
 
     for (const projectile of this.projectiles) {
       projectile.update(dt, this.enemies, this.fx);
@@ -315,10 +403,20 @@ export class World {
     this.spawnSystem.update(now);
     this.fx.update(dt);
 
+    // Autoguardado periódico.
+    this.saveAccum += dt;
+    if (this.saveAccum >= 15) {
+      this.saveAccum = 0;
+      this.saveNow();
+    }
+
     this.updateFps(dt);
     this.player.updateBar(this.rig.camera);
     for (const enemy of this.enemies) {
       enemy.updateBar(this.rig.camera);
+    }
+    for (const bot of this.bots) {
+      bot.updateBar(this.rig.camera);
     }
     this.rig.follow(this.player.worldX, this.player.worldY, this.player.worldZ, dt);
 
@@ -347,12 +445,18 @@ export class World {
     }
     this.disposed = true;
     window.removeEventListener('keydown', this.onKeyDown);
+    window.removeEventListener('beforeunload', this.onBeforeUnload);
     this.fx.dispose();
     this.player.dispose();
     for (const enemy of this.enemies) {
       enemy.dispose();
     }
+    for (const bot of this.bots) {
+      bot.dispose();
+    }
+    this.population.dispose();
     this.enemies.length = 0;
+    this.bots.length = 0;
     this.projectiles = [];
     this.pickups = [];
     this.container.remove();
