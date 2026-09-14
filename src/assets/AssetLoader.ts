@@ -169,6 +169,18 @@ export class AssetLoader implements ModelProvider {
 
     const root = cloneSkinned(loaded.scene) as THREE.Group;
 
+    // SkeletonUtils comparte materiales entre clones: se clonan para que un destello de
+    // golpe en una unidad no ilumine a todas las demás. Las texturas siguen compartidas.
+    root.traverse((child) => {
+      const mesh = child as THREE.Mesh;
+      if (!(mesh as unknown as { isMesh?: boolean }).isMesh) {
+        return;
+      }
+      mesh.material = Array.isArray(mesh.material)
+        ? mesh.material.map((material) => material.clone())
+        : mesh.material.clone();
+    });
+
     // Normalizar: escala a la altura deseada y baja los pies al suelo. Así da igual
     // en qué escala venga el modelo original.
     const initial = new THREE.Box3().setFromObject(root);

@@ -46,7 +46,7 @@ export class SkillSystem {
         SkillSystem.castBuff(player, skill, now, fx);
         break;
       case 'dash':
-        SkillSystem.castDash(player, skill);
+        SkillSystem.castDash(player, skill, fx);
         break;
       case 'projectile':
         SkillSystem.castProjectile(player, skill, ctx, damage, fx);
@@ -73,11 +73,25 @@ export class SkillSystem {
       }
     }
     fx?.ring(player.worldX, player.worldY, player.worldZ, radius / TILE_SIZE, skill.color, 0.35);
+    fx?.burst(player.worldX, player.worldY + 1, player.worldZ, skill.color, {
+      count: 22,
+      speed: 11,
+      ttl: 0.45,
+      spread: 1.2,
+      lift: 4,
+    });
   }
 
   private static castHeal(player: PlayerUnit, skill: SkillDef, damage: number, fx?: Fx): void {
     const heal = Math.round((skill.flat ?? 0) + damage);
     player.stats.hp = Math.min(player.stats.maxHp, player.stats.hp + heal);
+    fx?.burst(player.worldX, player.worldY + 0.6, player.worldZ, skill.color, {
+      count: 18,
+      speed: 3,
+      ttl: 0.85,
+      spread: 1.4,
+      lift: 6,
+    });
     fx?.floatingText(
       player.worldX,
       player.worldY + player.barHeight,
@@ -92,6 +106,14 @@ export class SkillSystem {
       return;
     }
     player.addBuff(skill.buff, now);
+    fx?.ring(player.worldX, player.worldY, player.worldZ, 1.6, skill.color, 0.5);
+    fx?.burst(player.worldX, player.worldY + 0.4, player.worldZ, skill.color, {
+      count: 16,
+      speed: 2,
+      ttl: 0.7,
+      spread: 1.2,
+      lift: 5,
+    });
     fx?.floatingText(
       player.worldX,
       player.worldY + player.barHeight,
@@ -101,13 +123,24 @@ export class SkillSystem {
     );
   }
 
-  private static castDash(player: PlayerUnit, skill: SkillDef): void {
+  private static castDash(player: PlayerUnit, skill: SkillDef, fx?: Fx): void {
     const distance = (skill.dashDistance ?? 3) * TILE_SIZE;
     const steps = 8;
     const stepLength = distance / steps;
+    const originX = player.worldX;
+    const originZ = player.worldZ;
+
     for (let i = 0; i < steps; i++) {
       player.moveWorld(player.facing.x * stepLength, player.facing.z * stepLength);
     }
+
+    fx?.burst(originX, player.worldY + 0.8, originZ, skill.color, {
+      count: 12,
+      speed: 4,
+      ttl: 0.3,
+      spread: 0.8,
+      lift: 2,
+    });
   }
 
   private static castProjectile(
@@ -137,8 +170,15 @@ export class SkillSystem {
       dir = { x: dx / len, z: dz / len };
     }
     if (fx) {
-      // Trazador de salida, para que se vea que la habilidad se ha lanzado.
+      // Fogonazo de salida, para que se vea que la habilidad se ha lanzado.
       fx.ring(player.worldX, player.worldY, player.worldZ, 1.2, skill.color, 0.2);
+      fx.burst(player.worldX, player.worldY + 2, player.worldZ, skill.color, {
+        count: 10,
+        speed: 5,
+        ttl: 0.25,
+        spread: 0.6,
+        lift: 2,
+      });
     }
     ctx.spawnProjectile(skill, damage, dir);
   }

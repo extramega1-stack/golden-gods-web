@@ -12,6 +12,8 @@ export interface WorldRefs {
   nav: Navigation;
 }
 
+type FlashMaterial = THREE.MeshStandardMaterial | THREE.MeshLambertMaterial;
+
 /**
  * Entidad base agnóstica del motor: guarda posición, stats y vida, y expone un handle
  * de Three.js (primitiva o modelo animado) para dibujarse. Toda la lógica vive aquí,
@@ -36,6 +38,8 @@ export class Unit {
   private readonly bar: HealthBar;
   private readonly barY: number;
   private movedThisFrame = false;
+  private flashRestore: { material: FlashMaterial; emissive: number }[] | null = null;
+  private flashUntil = 0;
 
   constructor(
     refs: WorldRefs,
@@ -122,12 +126,41 @@ export class Unit {
    * Hay que llamarlo después de mover a la unidad.
    */
   updateAnimation(dt: number): void {
+    this.updateFlash();
     if (!this.animation) {
       return;
     }
     this.animation.setLocomotion(this.movedThisFrame ? 'run' : 'idle');
     this.movedThisFrame = false;
     this.animation.update(dt);
+  }
+
+  /** Destello blanco al recibir un golpe, para que se note. */
+  private flash(): void {
+    if (!this.flashRestore) {
+      this.flashRestore = [];
+      this.mesh.traverse((child) => {
+        const mesh = child as THREE.Mesh;
+        const material = mesh.material as FlashMaterial | undefined;
+        if (material && material.emissive) {
+          this.flashRestore!.push({ material, emissive: material.emissive.getHex() });
+        }
+      });
+    }
+    for (const entry of this.flashRestore) {
+      entry.material.emissive.setHex(0xffffff);
+    }
+    this.flashUntil = performance.now() + 70;
+  }
+
+  private updateFlash(): void {
+    if (this.flashUntil === 0 || performance.now() < this.flashUntil || !this.flashRestore) {
+      return;
+    }
+    for (const entry of this.flashRestore) {
+      entry.material.emissive.setHex(entry.emissive);
+    }
+    this.flashUntil = 0;
   }
 
   updateBar(camera: THREE.Camera): void {
@@ -141,6 +174,7 @@ export class Unit {
     const damage = Math.max(1, Math.round(amount));
     this.stats.hp = Math.max(0, this.stats.hp - damage);
     this.bar.setRatio(this.hpRatio);
+    this.flash();
     if (this.stats.hp <= 0) {
       this.die();
     } else {

@@ -17,7 +17,9 @@ export class Projectile3D {
   private readonly dirZ: number;
   private readonly speed: number;
   private readonly damage: number;
+  private readonly color: number;
   private remaining: number;
+  private trailAccum = 0;
   private dead = false;
   private readonly mesh: THREE.Mesh;
   private readonly refs: WorldRefs;
@@ -41,6 +43,7 @@ export class Projectile3D {
     this.speed = speed;
     this.remaining = range;
     this.damage = damage;
+    this.color = color;
 
     this.mesh = new THREE.Mesh(
       new THREE.SphereGeometry(0.55, 10, 8),
@@ -75,6 +78,19 @@ export class Projectile3D {
     this.remaining -= step;
     this.sync();
 
+    // Rastro: chispas sueltas para que se vea de dónde viene.
+    this.trailAccum += dt;
+    if (this.trailAccum >= 0.045 && fx) {
+      this.trailAccum = 0;
+      fx.burst(this.worldX, this.mesh.position.y, this.worldZ, this.color, {
+        count: 2,
+        speed: 0.8,
+        ttl: 0.22,
+        spread: 0.25,
+        lift: 0.4,
+      });
+    }
+
     for (const enemy of enemies) {
       if (!enemy.isAlive) {
         continue;
@@ -82,6 +98,13 @@ export class Projectile3D {
       const dist = Math.hypot(enemy.worldX - this.worldX, enemy.worldZ - this.worldZ);
       if (dist <= HIT_RADIUS + enemy.radius) {
         CombatSystem.damage(enemy, this.damage, fx);
+        fx?.burst(this.worldX, this.mesh.position.y, this.worldZ, this.color, {
+          count: 14,
+          speed: 5,
+          ttl: 0.3,
+          spread: 0.5,
+          lift: 2,
+        });
         this.kill();
         return;
       }

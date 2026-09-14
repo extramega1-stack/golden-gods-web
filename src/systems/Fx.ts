@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import { Particles } from './Particles';
+import type { BurstOptions } from './Particles';
 import type { SceneRoot } from '../engine/SceneRoot';
 import type { Wc3Camera } from '../engine/Wc3Camera';
 
@@ -34,12 +36,20 @@ export class Fx {
   private readonly rings: Ring[] = [];
   private readonly dissolves: Dissolve[] = [];
   private readonly projected = new THREE.Vector3();
+  private readonly particles: Particles;
 
   constructor(
     private readonly host: HTMLElement,
     private readonly root: SceneRoot,
     private readonly rig: Wc3Camera
-  ) {}
+  ) {
+    this.particles = new Particles(root);
+  }
+
+  /** Chispas: impactos, muertes, lanzamiento de hechizos. */
+  burst(x: number, y: number, z: number, color: number, options: BurstOptions = {}): void {
+    this.particles.burst(x, y, z, color, options);
+  }
 
   floatingText(x: number, y: number, z: number, text: string, color: string, ttl = 0.9): void {
     const el = document.createElement('div');
@@ -89,6 +99,7 @@ export class Fx {
     this.updateTexts(dt);
     this.updateRings(dt);
     this.updateDissolves(dt);
+    this.particles.update(dt);
   }
 
   private updateTexts(dt: number): void {

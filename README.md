@@ -150,6 +150,9 @@ compilar pasa `npm test`.
 - `save` — guardado, continuar, código de héroe, rechazo de códigos corruptos y partida limpia.
 - `assets` — emparejado de animaciones y que cada GLB de personaje exista y cubra los 7 estados.
 - `props` — reparto determinista de decoración, zonas reservadas y que cada prop tenga su GLB.
+- `weapons` — que cada nodo de enganche exista de verdad en su modelo y que cada arma tenga GLB.
+- `particles` — el pool de partículas: arranque apagado, estallidos, apagado por tiempo y que
+  desbordarlo no rompa nada.
 
 ## Limitaciones conocidas
 

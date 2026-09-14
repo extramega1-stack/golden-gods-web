@@ -25,6 +25,11 @@ export class CombatSystem {
   static damage(target: Unit, amount: number, fx?: Fx): number {
     const dealt = target.takeDamage(amount);
     if (dealt > 0 && fx) {
+      fx.burst(target.worldX, target.worldY + 1.6, target.worldZ, 0xffd76a, {
+        count: 6,
+        speed: 3.5,
+        ttl: 0.3,
+      });
       fx.floatingText(
         target.worldX,
         target.worldY + target.barHeight + 0.6,

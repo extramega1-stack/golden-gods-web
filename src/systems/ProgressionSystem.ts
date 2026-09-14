@@ -84,6 +84,14 @@ export class ProgressionSystem {
 
     if (gained > 0) {
       ProgressionSystem.recompute(player, true);
+      fx?.ring(player.worldX, player.worldY, player.worldZ, 2.4, 0xffe58a, 0.6);
+      fx?.burst(player.worldX, player.worldY + 0.5, player.worldZ, 0xffe58a, {
+        count: 24,
+        speed: 3.5,
+        ttl: 0.9,
+        spread: 1.6,
+        lift: 7,
+      });
       fx?.floatingText(
         player.worldX,
         player.worldY + player.barHeight + 1.2,

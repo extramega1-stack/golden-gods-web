@@ -227,6 +227,13 @@ export class World {
     }
 
     this.fx.ring(enemy.worldX, enemy.worldY, enemy.worldZ, 3.2, enemy.def.color, 0.35);
+    this.fx.burst(enemy.worldX, enemy.worldY + 1.6, enemy.worldZ, enemy.def.color, {
+      count: 20,
+      speed: 7,
+      ttl: 0.5,
+      spread: 1,
+      lift: 3,
+    });
 
     const index = this.enemies.indexOf(enemy);
     if (index !== -1) {
