@@ -12,7 +12,16 @@ import { Hud } from '../ui/Hud';
 import { SkillBar } from '../ui/SkillBar';
 import { TalentPanel } from '../ui/TalentPanel';
 import { InventoryPanel } from '../ui/InventoryPanel';
+import { QuestPanel } from '../ui/QuestPanel';
 import { SavePanel } from '../ui/SavePanel';
+import {
+  activeQuest,
+  advance,
+  createQuestState,
+  questProgress,
+  type QuestState,
+} from '../systems/QuestSystem';
+import { questObjectiveText, type QuestDef } from '../data/quests';
 import { SaveManager, type SaveData } from '../core/SaveManager';
 import { applySaveToHero } from '../core/heroSave';
 import { Fx } from '../systems/Fx';
@@ -61,6 +70,8 @@ export class World {
   private readonly skillBar: SkillBar;
   private readonly talentPanel: TalentPanel;
   private readonly inventoryPanel: InventoryPanel;
+  private readonly questPanel: QuestPanel;
+  private readonly questState: QuestState = createQuestState();
   private readonly savePanel: SavePanel;
   private readonly smithButton: HTMLButtonElement;
   private readonly smith: { x: number; z: number };
@@ -163,6 +174,7 @@ export class World {
       (uid) => this.equipItem(uid),
       (slot) => this.unequipItem(slot)
     );
+    this.questPanel = new QuestPanel(this.container);
     this.savePanel = new SavePanel(this.container, [
       { label: 'Guardar ahora', onClick: () => this.saveNowAndReport() },
       { label: 'Exportar código de héroe', onClick: () => this.exportHero() },
@@ -199,6 +211,8 @@ export class World {
       this.trySmith();
     } else if (key === 'o') {
       this.savePanel.toggle();
+    } else if (key === 'l') {
+      this.questPanel.toggle(this.questState);
     }
   };
 
@@ -212,7 +226,6 @@ export class World {
 
   private onEnemyDeath(enemy: EnemyUnit): void {
     ProgressionSystem.awardExp(this.player, enemy.def.expReward, this.fx);
-
     const loot = LootSystem.roll(enemy.def);
     this.player.gold += loot.gold;
     this.fx.floatingText(
@@ -225,6 +238,8 @@ export class World {
     if (loot.itemId) {
       this.spawnPickup(enemy.worldX, enemy.worldZ, loot.itemId);
     }
+
+    this.progressQuests(enemy.def.id);
 
     this.fx.ring(enemy.worldX, enemy.worldY, enemy.worldZ, 3.2, enemy.def.color, 0.35);
     this.fx.burst(enemy.worldX, enemy.worldY + 1.6, enemy.worldZ, enemy.def.color, {
@@ -298,6 +313,57 @@ export class World {
   private spendTalent(id: string): void {
     TalentSystem.spend(this.player, id);
     this.talentPanel.refresh(this.player);
+  }
+
+  /**
+   * Avanza las misiones con el estado actual y reparte recompensas. Va en bucle porque
+   * la recompensa de una puede completar la siguiente (EXP que sube de nivel, por ejemplo).
+   */
+  private progressQuests(killedEnemy?: string): void {
+    for (let guard = 0; guard < 8; guard++) {
+      const completed = advance(this.questState, {
+        level: this.player.level,
+        gold: this.player.gold,
+        killedEnemy,
+      });
+      killedEnemy = undefined;
+
+      if (completed.length === 0) {
+        break;
+      }
+      for (const quest of completed) {
+        this.grantReward(quest);
+      }
+    }
+
+    if (this.questPanel.isOpen()) {
+      this.questPanel.refresh(this.questState);
+    }
+  }
+
+  private grantReward(quest: QuestDef): void {
+    if (quest.reward.gold) {
+      this.player.gold += quest.reward.gold;
+    }
+    if (quest.reward.exp) {
+      ProgressionSystem.awardExp(this.player, quest.reward.exp, this.fx);
+    }
+    if (quest.reward.itemId) {
+      InventorySystem.addItem(this.player, quest.reward.itemId);
+    }
+
+    this.notice = `¡Misión completada: ${quest.name}!`;
+    this.fx.floatingText(
+      this.player.worldX,
+      this.player.worldY + this.player.barHeight + 2,
+      this.player.worldZ,
+      `¡${quest.name}!`,
+      '#8ef0a0',
+      1.6
+    );
+    if (this.inventoryPanel.isOpen()) {
+      this.inventoryPanel.refresh(this.player);
+    }
   }
 
   private saveNow(): void {
@@ -569,6 +635,11 @@ export class World {
         (this.notice ? `\n${this.notice}` : '')
       : 'Has muerto — reapareciendo…';
 
+    const quest = activeQuest(this.questState);
+    const objective = quest
+      ? `\nObjetivo: ${quest.name} — ${questObjectiveText(quest, questProgress(this.questState, quest))}`
+      : '\nTodas las misiones completadas';
+
     this.hud.update({
       title: `${this.god.name} · Nv ${this.player.level} · ${regionAt(row) || '—'} · celda ${col},${row}`,
       hp: stats.hp,
@@ -577,7 +648,7 @@ export class World {
       maxMp: stats.maxMp,
       exp: this.player.exp,
       expNext: expToNext(this.player.level),
-      notice: status,
+      notice: status + objective,
     });
   }
 }

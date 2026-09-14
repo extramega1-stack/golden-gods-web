@@ -34,6 +34,14 @@ export {
 } from '../src/world/props.ts';
 export { createRng } from '../src/world/rng.ts';
 export { Particles } from '../src/systems/Particles.ts';
+export { QUESTS, questObjectiveText } from '../src/data/quests.ts';
+export {
+  createQuestState,
+  activeQuest,
+  advance,
+  questProgress,
+  questIsDone,
+} from '../src/systems/QuestSystem.ts';
 export { AISystem } from '../src/systems/AISystem.ts';
 export { SpawnSystem } from '../src/systems/SpawnSystem.ts';
 export { BossSystem } from '../src/systems/BossSystem.ts';

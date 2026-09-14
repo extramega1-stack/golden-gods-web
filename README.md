@@ -54,6 +54,7 @@ npm run icons      # regenera los iconos PWA en public/icons/
 | Habilidades Q/E/R | teclas Q, E, R | botones de la barra |
 | Talentos | `T` | — |
 | Equipo y mochila | `I` | — |
+| Misiones | `L` | — |
 | Herrería (junto al NPC) | `G` | botón que aparece al acercarte |
 | Partida (guardar, exportar, importar, borrar) | `O` | — |
 
@@ -66,6 +67,11 @@ Eliges dios, apareces en el **Prado Dorado** y subes por tres subáreas a distin
 subir de nivel y ganar oro, recoges el botín, mejoras el equipo en la herrería y gastas puntos de
 talento. El jefe tiene tres fases y un golpe sísmico que se anuncia con un anillo: si te alejas
 del círculo antes de que cierre, lo esquivas.
+
+Una **cadena de misiones** te va marcando el camino (el objetivo activo se ve siempre en el HUD, y
+`L` abre el registro completo): limpiar el prado, subir de nivel, cazar brutos en las ruinas,
+reunir oro para la herrería y, al final, bajar a por el Titán. Cada una da oro, experiencia o
+equipo.
 
 ## Estructura
 
@@ -120,6 +126,7 @@ Todo el balance es dato, no código:
 - `data/items.ts` / `data/lootTables.ts` — equipo y tablas de botín.
 - `data/enemies.ts` — enemigos y jefe (fases y golpe sísmico).
 - `data/zones.ts` — mapa, alturas, subáreas, apariciones y posición de la herrería.
+- `data/quests.ts` — la cadena de misiones, con sus objetivos y recompensas.
 - `config/constants.ts` — tamaño de celda, altura por nivel, escalón máximo.
 
 ### Dónde están los números "de tacto"
@@ -164,6 +171,8 @@ compilar pasa `npm test`.
 - `weapons` — que cada nodo de enganche exista de verdad en su modelo y que cada arma tenga GLB.
 - `particles` — el pool de partículas: arranque apagado, estallidos, apagado por tiempo y que
   desbordarlo no rompa nada.
+- `quests` — la cadena de misiones: contadores por misión, objetivos de bajas, nivel y oro, una
+  pasada completa de la cadena y que cada misión apunte a un enemigo que existe.
 
 ## Limitaciones conocidas
 

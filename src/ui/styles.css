@@ -355,6 +355,42 @@ body {
   cursor: default;
 }
 
+/* --- Registro de misiones --- */
+.quest-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 7px 0;
+  border-bottom: 1px solid rgba(138, 122, 63, 0.25);
+  color: #8b8598;
+}
+
+.quest-row.active {
+  color: #e8d9a0;
+}
+
+.quest-row.done {
+  color: #6f8f70;
+}
+
+.quest-row.active strong {
+  color: #ffe58a;
+}
+
+.quest-desc {
+  font-size: 11px;
+  color: #b9b1c9;
+}
+
+.quest-objective {
+  font-size: 12px;
+}
+
+.quest-reward {
+  font-size: 11px;
+  color: #8fd0ff;
+}
+
 /* --- Botón de herrería --- */
 .smith-button {
   position: absolute;
