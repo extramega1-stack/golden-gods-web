@@ -3,3 +3,7 @@ dist/
 *.local
 .DS_Store
 .vite/
+
+# Proyecto nativo generado por Capacitor (lo crea el workflow de CI con "cap add android")
+android/
+ios/

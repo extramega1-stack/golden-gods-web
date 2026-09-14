@@ -50,6 +50,22 @@ En producción (`npm run build && npm run preview`, o desplegado por HTTPS) el j
 manifest y service worker, así que el navegador ofrece **"Añadir a pantalla de inicio"** y se
 abre a pantalla completa como una app.
 
+## APK de Android
+
+El workflow `.github/workflows/android-apk.yml` empaqueta el juego con **Capacitor** y compila
+un APK en cada push a `main` (o a mano desde *Actions → Android APK → Run workflow*).
+
+- El APK se publica en **Releases** con la etiqueta `android-latest`, y también como artefacto
+  de la ejecución.
+- Es un **APK de depuración**, firmado con la clave de desarrollo de Android: sirve para
+  instalarlo en tu teléfono, no para publicar en Play Store.
+- En el móvil: descarga el APK y ábrelo; tendrás que permitir "instalar apps de fuentes
+  desconocidas" para el navegador o el gestor de archivos.
+
+El proyecto nativo `android/` lo genera el CI con `npx cap add android` y está en `.gitignore`.
+Si más adelante quieres personalizarlo (icono, nombre, permisos, pantalla completa), hay que
+generarlo en local con `npx cap add android` y versionarlo.
+
 ## Estructura
 
 ```

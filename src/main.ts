@@ -3,7 +3,9 @@ import { gameConfig } from './config/gameConfig';
 
 new Phaser.Game(gameConfig);
 
-if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+const isNativeApp = window.Capacitor?.isNativePlatform?.() === true;
+
+if (import.meta.env.PROD && !isNativeApp && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js').catch(() => undefined);
   });
