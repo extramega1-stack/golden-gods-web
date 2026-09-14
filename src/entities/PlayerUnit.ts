@@ -1,6 +1,14 @@
 import { createUnitMesh } from './MeshFactory';
 import { Unit, type WorldRefs } from './Unit';
-import type { GodDef, InventoryItem, ItemSlot, Stats } from '../types';
+import { ProgressionSystem } from '../systems/ProgressionSystem';
+import type {
+  Buff,
+  GodDef,
+  InventoryItem,
+  ItemSlot,
+  SkillBuffSpec,
+  Stats,
+} from '../types';
 
 const BODY_RADIUS = 1.1;
 const BODY_HEIGHT = 3.4;
@@ -25,6 +33,7 @@ export class PlayerUnit extends Unit {
   readonly skillReadyAt: Record<string, number> = {};
   readonly skills: string[];
   readonly baseStats: Stats;
+  buffs: Buff[] = [];
 
   constructor(refs: WorldRefs, x: number, z: number, god: GodDef) {
     const mesh = createUnitMesh({
@@ -37,5 +46,27 @@ export class PlayerUnit extends Unit {
     this.god = god;
     this.baseStats = { ...god.baseStats };
     this.skills = [...god.skills];
+    ProgressionSystem.recompute(this, true);
+  }
+
+  addBuff(buff: SkillBuffSpec, now: number): void {
+    this.buffs.push({
+      stat: buff.stat,
+      mode: buff.mode,
+      value: buff.value,
+      until: now + buff.duration * 1000,
+    });
+    ProgressionSystem.recompute(this);
+  }
+
+  /** Quita los buffs caducados; devuelve true si hubo cambios (y recalculó stats). */
+  updateBuffs(now: number): boolean {
+    const before = this.buffs.length;
+    this.buffs = this.buffs.filter((b) => b.until > now);
+    if (this.buffs.length !== before) {
+      ProgressionSystem.recompute(this);
+      return true;
+    }
+    return false;
   }
 }
