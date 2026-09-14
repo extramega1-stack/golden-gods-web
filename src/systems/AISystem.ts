@@ -1,4 +1,5 @@
 import { CombatSystem } from './CombatSystem';
+import { BossSystem } from './BossSystem';
 import type { EnemyUnit } from '../entities/EnemyUnit';
 import type { PlayerUnit } from '../entities/PlayerUnit';
 import type { Fx } from './Fx';
@@ -9,9 +10,15 @@ export class AISystem {
       return;
     }
 
+    const now = performance.now();
+
     for (const enemy of enemies) {
       if (!enemy.isAlive) {
         continue;
+      }
+
+      if (enemy.def.isBoss) {
+        BossSystem.update(enemy, player, now, fx);
       }
 
       const dx = player.worldX - enemy.worldX;

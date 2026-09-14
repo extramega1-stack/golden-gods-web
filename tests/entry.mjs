@@ -14,6 +14,7 @@ export { ENEMIES } from '../src/data/enemies.ts';
 export { CombatSystem } from '../src/systems/CombatSystem.ts';
 export { AISystem } from '../src/systems/AISystem.ts';
 export { SpawnSystem } from '../src/systems/SpawnSystem.ts';
+export { BossSystem } from '../src/systems/BossSystem.ts';
 export { SkillSystem } from '../src/systems/SkillSystem.ts';
 export { ProgressionSystem } from '../src/systems/ProgressionSystem.ts';
 export { TalentSystem } from '../src/systems/TalentSystem.ts';

@@ -8,6 +8,13 @@ export class EnemyUnit extends Unit {
   readonly def: EnemyDef;
   readonly aggroRange: number;
 
+  bossPhase = 1;
+  slamReadyAt = 0;
+  slamPendingAt = 0;
+  slamDamage = 0;
+  slamX = 0;
+  slamZ = 0;
+
   constructor(refs: WorldRefs, x: number, z: number, def: EnemyDef) {
     const radius = def.radiusTiles * TILE_SIZE;
     const height = radius * 2.4;

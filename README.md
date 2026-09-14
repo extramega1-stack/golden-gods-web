@@ -1,22 +1,31 @@
 # Golden Gods Web
 
-> **En migración a 3D.** La última versión jugable completa es la 2D con Phaser, congelada en
-> la etiqueta `v0.1-2d`. `main` está en plena reescritura a 3D con Three.js (ver el plan en
-> `~/.commandcode/plans/wc3-3d-rewrite.md`); hasta la fase 4 no vuelve a haber vertical slice
-> jugable, y las secciones de controles y estructura de abajo describen la versión 2D.
-
-ORPG (Open RPG) isométrico jugable en el navegador, inspirado **conceptualmente** en los
-mapas ORPG de Warcraft III (como Golden Gods II): mundo abierto, subir de nivel, jefes con
-botín, mejoras de equipo y guardado de héroe, con una capa "MMO local" donde bots simulan
-otros jugadores.
+ORPG (Open RPG) **3D** jugable en el navegador, inspirado **conceptualmente** en los mapas ORPG
+de Warcraft III (como Golden Gods II): mundo abierto con terreno y desniveles, subir de nivel,
+jefes con botín, mejoras de equipo y una capa "MMO local" donde bots simulan otros jugadores.
 
 No contiene ningún recurso, nombre ni código del mapa original: todo el contenido vive en
 `src/data/` y es propio.
 
+La versión 2D anterior (Phaser) está congelada en la etiqueta **`v0.1-2d`** por si quieres
+comparar o recuperar algo.
+
+## Estado
+
+Completadas las fases 0–7 de la migración a 3D: base Three.js, terreno con alturas y
+acantilados, héroe y cámara, combate, progresión y UI, selección de dioses, botín y herrería, y
+jefe con fases.
+
+Pendientes: **Fase 8** (bots de party y población simulada), **Fase 9** (persistencia: guardado
+local y código de héroe) y **Fase 10** (revalidar PWA y APK).
+
+> Nota: el guardado (`SaveManager`) está implementado y probado, pero todavía **no está conectado
+> a la interfaz**: en la versión 3D actual cada partida empieza de cero.
+
 ## Requisitos
 
 - Node.js 20+ (probado con Node 24) y npm.
-- Un navegador moderno con WebGL/Canvas.
+- Un navegador con WebGL.
 
 ## Cómo ejecutar
 
@@ -25,8 +34,8 @@ npm install
 npm run dev -- --host
 ```
 
-`--host` expone el servidor en la red local, imprescindible para probar en el móvil: abre la
-URL de red que imprime Vite (p. ej. `http://192.168.x.x:5173`).
+`--host` expone el servidor en la red local. Como Termux corre en el propio teléfono, también
+puedes abrir directamente `http://localhost:5173` en el navegador del móvil.
 
 Otros comandos:
 
@@ -34,6 +43,7 @@ Otros comandos:
 npm run build      # typecheck + build de producción en dist/
 npm run preview    # sirve el build de producción
 npm run typecheck  # solo comprobación de tipos
+npm test           # tests de lógica (esbuild + Node, sin WebGL)
 npm run icons      # regenera los iconos PWA en public/icons/
 ```
 
@@ -41,76 +51,99 @@ npm run icons      # regenera los iconos PWA en public/icons/
 
 | Acción | Teclado / ratón | Táctil |
 |---|---|---|
-| Moverse | WASD o flechas | Joystick (mitad inferior izquierda) |
-| Habilidades Q/E/R | teclas Q, E, R | toca los botones de habilidad |
+| Elegir dios | teclas 1-4 o clic en la carta | toca la carta |
+| Moverse | WASD o flechas | joystick (mitad inferior izquierda) |
 | Ataque básico | automático al enemigo más cercano en rango | igual |
-| Talentos | `T` | botón TALENTOS |
-| Equipo y mochila | `I` | botón EQUIPO |
-| Herrería (cerca del NPC) | `G` | botón HERRERÍA |
-| Partida (guardar/exportar/importar) | `O` | botón PARTIDA |
+| Habilidades Q/E/R | teclas Q, E, R | botones de la barra |
+| Talentos | `T` | — |
+| Equipo y mochila | `I` | — |
+| Herrería (junto al NPC) | `G` | botón que aparece al acercarte |
 
-## Instalar como app (PWA)
+Cada dios tiene sus propias tres habilidades (área, proyectil, cura, embestida o buff).
 
-En producción (`npm run build && npm run preview`, o desplegado por HTTPS) el juego incluye
-manifest y service worker, así que el navegador ofrece **"Añadir a pantalla de inicio"** y se
-abre a pantalla completa como una app.
+## Cómo se juega
 
-## APK de Android
-
-El workflow `.github/workflows/android-apk.yml` empaqueta el juego con **Capacitor** y compila
-un APK en cada push a `main` (o a mano desde *Actions → Android APK → Run workflow*).
-
-- El APK se publica en **Releases** con la etiqueta `android-latest`, y también como artefacto
-  de la ejecución.
-- Es un **APK de depuración**, firmado con la clave de desarrollo de Android: sirve para
-  instalarlo en tu teléfono, no para publicar en Play Store.
-- En el móvil: descarga el APK y ábrelo; tendrás que permitir "instalar apps de fuentes
-  desconocidas" para el navegador o el gestor de archivos.
-
-El proyecto nativo `android/` lo genera el CI con `npx cap add android` y está en `.gitignore`.
-Si más adelante quieres personalizarlo (icono, nombre, permisos, pantalla completa), hay que
-generarlo en local con `npx cap add android` y versionarlo.
+Eliges dios, apareces en el **Prado Dorado** y subes por tres subáreas a distinto nivel: el
+**Prado**, las **Ruinas de Khar** y la **Cima del Titán**, donde espera el jefe. Matas mobs para
+subir de nivel y ganar oro, recoges el botín, mejoras el equipo en la herrería y gastas puntos de
+talento. El jefe tiene tres fases y un golpe sísmico que se anuncia con un anillo: si te alejas
+del círculo antes de que cierre, lo esquivas.
 
 ## Estructura
 
 ```
 src/
-  config/     constantes y configuración de Phaser
-  core/       bus de eventos, input, SaveManager
-  data/       TODO el contenido y balance (dioses, habilidades, talentos, items, enemigos, botín, zonas, bots)
-  entities/   Actor, Player, Enemy, Projectile, Pickup, PartyBot, PopulationHero
-  systems/    combate, IA, jefe, spawn, progresión, talentos, skills, inventario, loot, población
-  ui/         HUD y paneles (habilidades, talentos, inventario, partida) y joystick
-  world/      proyección isométrica, map loader, texturas placeholder
-  scenes/     Boot, selección de héroe y mundo
+  engine/     motor: renderer, escena, cámara tipo WC3, bucle
+  app/        App (estados: menú y partida) y World (una partida en curso)
+  world/      alturas, malla del terreno con acantilados, navegación, zona
+  entities/   Unit (base), PlayerUnit, EnemyUnit, Projectile3D, Pickup3D, mallas y barras
+  systems/    combate, IA, jefe, spawn, progresión, talentos, habilidades, inventario, botín, efectos
+  ui/         DOM sobre el canvas: HUD, habilidades, talentos, equipo, menú, joystick
+  data/       TODO el contenido y balance (dioses, habilidades, talentos, objetos, enemigos, botín, zonas)
+  core/       entrada (teclado y táctil), SaveManager, eventos
+tests/        suites de lógica pura (entradas vía esbuild)
+scripts/      generación de iconos y ejecución de tests
 ```
+
+### Cómo funciona el 3D
+
+- **Cámara tipo WC3**: perspectiva con 55° de inclinación y yaw fijo, con seguimiento suavizado y
+  sacudida. Las direcciones de entrada se convierten de pantalla a mundo según ese yaw.
+- **Terreno**: cada celda es una tapa plana a su altura y, donde hay desnivel, se añade un faldón
+  vertical; eso es lo que se lee como acantilado. Todo el terreno es **una sola geometría**
+  (2552 triángulos), pensado para el WebView de Android.
+- **Navegación**: rejilla con **regla de escalón**; no se salva un desnivel de más de un nivel.
+- **Entidades agnósticas del motor**: `Unit` guarda posición, stats y vida, y expone un handle de
+  Three.js; la lógica no depende del render.
+- **UI en DOM** sobre el canvas, en vez de UI dibujada en el motor.
 
 ### Personalizar contenido
 
 Todo el balance es dato, no código:
 
-- `data/gods.ts` — los 4 dioses jugables (stats, crecimiento, habilidades).
+- `data/gods.ts` — los 4 dioses (stats, crecimiento y habilidades).
 - `data/skills.ts` — habilidades y sus efectos (`aoe`, `projectile`, `heal`, `dash`, `buff`).
 - `data/talents.ts` — árbol de talentos.
 - `data/items.ts` / `data/lootTables.ts` — equipo y tablas de botín.
-- `data/enemies.ts` — enemigos y jefe.
-- `data/zones.ts` — mapa, subáreas, puntos de aparición y posición de la herrería.
+- `data/enemies.ts` — enemigos y jefe (fases y golpe sísmico).
+- `data/zones.ts` — mapa, alturas, subáreas, apariciones y posición de la herrería.
+- `config/constants.ts` — tamaño de celda, altura por nivel, escalón máximo.
 
-## Estado del proyecto
+## APK de Android
 
-Completadas las 9 fases del plan: scaffold, mundo isométrico y movimiento, combate, progresión
-y habilidades, 4 dioses con selección, loot y economía, zona con 3 subáreas y jefe, bots de
-party y población, persistencia, y pulido + PWA.
+El workflow `.github/workflows/android-apk.yml` empaqueta el juego con **Capacitor** y compila
+un APK en cada push a `main` (o a mano desde *Actions → Android APK → Run workflow*). Antes de
+compilar pasa `npm test`.
 
-### Limitaciones conocidas
+- El APK se publica en **Releases** con la etiqueta `android-latest`, y también como artefacto
+  de la ejecución.
+- Es un **APK de depuración**, firmado con la clave de desarrollo: sirve para instalarlo en tu
+  teléfono, no para publicar en Play Store.
+- En el móvil: descarga el APK y ábrelo; tendrás que permitir "instalar apps de fuentes
+  desconocidas".
 
-- Los enemigos y el jefe atacan solo al jugador, no a los compañeros de party.
-- El arte es placeholder generado por código (formas y colores), pensado para sustituirse por
-  tilesets libres sin tocar la lógica.
-- El balance no está probado en partidas reales; los números de `data/` son un punto de partida.
-- Sin multijugador real: lo "cooperativo" son bots.
+## Tests
 
-### Backlog (fuera del MVP)
+`npm test` compila las entradas con esbuild y ejecuta las suites en Node, sin navegador ni WebGL
+(Three.js construye geometría sin contexto):
 
-Quests encadenadas, mazmorras instanciadas, rebirth/prestigio, arena PvP, vehículo, más zonas y
-dioses, y netcode real.
+- `terrain` — alturas, navegación, escalones, malla y bordes del mapa.
+- `movement` — dirección de cámara, movimiento contra muros y acantilados, captura del héroe.
+- `combat` — mitigación, cooldown, daño mínimo, muerte, IA y ciclo de respawn.
+- `progression` — niveles, talentos, coste y cooldown de habilidades, área, cura, buffs y proyectil.
+- `loot` — botín, equipar y quitar, mejoras y escalado.
+- `boss` — fases, aviso del golpe sísmico y esquiva.
+
+## Limitaciones conocidas
+
+- Los enemigos y el jefe atacan solo al jugador, no a los compañeros de party (aún no existen).
+- El arte es placeholder generado por código (cápsulas, conos y cajas), sustituible por modelos
+  reales sin tocar la lógica.
+- El balance no está probado en partidas largas; los números de `data/` son un punto de partida.
+- Sin multijugador real: lo "cooperativo" serán bots.
+
+## Backlog
+
+Bots de party y población (fase 8), persistencia y código de héroe (fase 9), PWA y APK
+revalidados (fase 10), y más adelante: niebla de guerra, rotación de cámara, animaciones
+esqueléticas, quests, mazmorras, rebirth y arena PvP.
