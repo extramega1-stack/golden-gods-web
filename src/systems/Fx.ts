@@ -77,6 +77,14 @@ export class Fx {
     this.rig.shake(seconds, intensity);
   }
 
+  /** Limpia los textos pendientes; las mallas 3D se van solas o se destruyen con su unidad. */
+  dispose(): void {
+    for (const item of this.texts) {
+      item.el.remove();
+    }
+    this.texts.length = 0;
+  }
+
   update(dt: number): void {
     this.updateTexts(dt);
     this.updateRings(dt);
