@@ -63,6 +63,15 @@ jobs:
           path: golden-gods.apk
           if-no-files-found: error
 
+      - name: Move the release tag to this commit
+        run: |
+          # El "Source code (zip)" que GitHub ofrece en la página de Releases es el
+          # código de la ETIQUETA del release, no el de main. Si la etiqueta se queda
+          # atrás, descargas un APK nuevo con el código viejo al lado. Por eso se mueve
+          # a este commit antes de publicar.
+          git tag -f android-latest "$GITHUB_SHA"
+          git push --force origin "refs/tags/android-latest"
+
       - name: Publish APK to release
         uses: softprops/action-gh-release@v3
         with:
