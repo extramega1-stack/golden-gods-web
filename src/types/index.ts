@@ -149,3 +149,16 @@ export interface Region {
   fromRow: number;
   toRow: number;
 }
+
+/** Contrato mínimo que SaveManager necesita de un héroe, sin acoplarse a la entidad concreta. */
+export interface SaveableHero {
+  level: number;
+  exp: number;
+  gold: number;
+  talentPoints: number;
+  talentRanks: Record<string, number>;
+  inventory: InventoryItem[];
+  equipped: Record<ItemSlot, InventoryItem | null>;
+  worldX: number;
+  worldZ: number;
+}

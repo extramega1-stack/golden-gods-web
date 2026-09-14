@@ -1,6 +1,5 @@
 import { SAVE_KEY, SAVE_VERSION } from '../config/constants';
-import type { Player } from '../entities/Player';
-import type { InventoryItem, ItemSlot } from '../types';
+import type { InventoryItem, ItemSlot, SaveableHero } from '../types';
 
 export interface SaveData {
   version: number;
@@ -13,7 +12,7 @@ export interface SaveData {
   inventory: InventoryItem[];
   equipped: Record<ItemSlot, InventoryItem | null>;
   x: number;
-  y: number;
+  z: number;
   savedAt: number;
 }
 
@@ -41,22 +40,22 @@ function checksum(text: string): string {
 }
 
 export class SaveManager {
-  static capture(player: Player, godId: string): SaveData {
+  static capture(hero: SaveableHero, godId: string): SaveData {
     return {
       version: SAVE_VERSION,
       godId,
-      level: player.level,
-      exp: player.exp,
-      gold: player.gold,
-      talentPoints: player.talentPoints,
-      talentRanks: { ...player.talentRanks },
-      inventory: player.inventory.map((i) => ({ ...i })),
+      level: hero.level,
+      exp: hero.exp,
+      gold: hero.gold,
+      talentPoints: hero.talentPoints,
+      talentRanks: { ...hero.talentRanks },
+      inventory: hero.inventory.map((i) => ({ ...i })),
       equipped: {
-        weapon: player.equipped.weapon ? { ...player.equipped.weapon } : null,
-        armor: player.equipped.armor ? { ...player.equipped.armor } : null,
+        weapon: hero.equipped.weapon ? { ...hero.equipped.weapon } : null,
+        armor: hero.equipped.armor ? { ...hero.equipped.armor } : null,
       },
-      x: player.worldX,
-      y: player.worldY,
+      x: hero.worldX,
+      z: hero.worldZ,
       savedAt: Date.now(),
     };
   }

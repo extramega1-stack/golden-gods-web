@@ -1,11 +1,8 @@
-export const GAME_WIDTH = 960;
-export const GAME_HEIGHT = 540;
+export const TILE_SIZE = 4;
+export const HEIGHT_STEP = 2.5;
+export const MAX_STEP_LEVELS = 1;
 
-export const TILE_W = 64;
-export const TILE_H = 32;
+export const SAVE_KEY = 'gg-web-save-v2';
+export const SAVE_VERSION = 2;
 
-export const SAVE_KEY = 'gg-web-save-v1';
-export const SAVE_VERSION = 1;
-
-export const DEPTH_MIN = -10000;
-export const DEPTH_MAX = 10000;
+export const MAX_DPR = 2;
