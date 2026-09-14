@@ -1,5 +1,10 @@
 # Golden Gods Web
 
+> **En migración a 3D.** La última versión jugable completa es la 2D con Phaser, congelada en
+> la etiqueta `v0.1-2d`. `main` está en plena reescritura a 3D con Three.js (ver el plan en
+> `~/.commandcode/plans/wc3-3d-rewrite.md`); hasta la fase 4 no vuelve a haber vertical slice
+> jugable, y las secciones de controles y estructura de abajo describen la versión 2D.
+
 ORPG (Open RPG) isométrico jugable en el navegador, inspirado **conceptualmente** en los
 mapas ORPG de Warcraft III (como Golden Gods II): mundo abierto, subir de nivel, jefes con
 botín, mejoras de equipo y guardado de héroe, con una capa "MMO local" donde bots simulan

@@ -20,37 +20,71 @@ const WALLS = new Set([
   '5,24',
 ]);
 
-function baseTile(r: number): number {
-  if (r <= 13) {
+/** Mesas elevadas: se levantan dos niveles sobre su región (acantilado por los cuatro lados). */
+const MESAS = [
+  { col: 8, row: 18, radius: 2.6 },
+  { col: 22, row: 8, radius: 2.2 },
+];
+
+function baseTile(row: number): number {
+  if (row <= 13) {
     return Tile.Floor;
   }
-  if (r <= 22) {
+  if (row <= 22) {
     return Tile.Path;
   }
   return Tile.Arena;
 }
 
-function buildWorld(): number[][] {
+/** Cada región está un nivel por encima de la anterior: se sube por un escalón de un nivel. */
+function regionLevel(row: number): number {
+  if (row <= 13) {
+    return 0;
+  }
+  if (row <= 22) {
+    return 1;
+  }
+  return 2;
+}
+
+function buildTiles(): number[][] {
   const data: number[][] = [];
   for (let r = 0; r < ROWS; r++) {
     const row: number[] = [];
     for (let c = 0; c < COLS; c++) {
       const border = r === 0 || c === 0 || r === ROWS - 1 || c === COLS - 1;
-      if (border || WALLS.has(`${c},${r}`)) {
-        row.push(Tile.Wall);
-      } else {
-        row.push(baseTile(r));
-      }
+      row.push(border || WALLS.has(`${c},${r}`) ? Tile.Wall : baseTile(r));
     }
     data.push(row);
   }
   return data;
 }
 
+function inMesa(col: number, row: number): boolean {
+  return MESAS.some((m) => Math.hypot(col - m.col, row - m.row) <= m.radius);
+}
+
+function buildHeights(tiles: number[][]): number[][] {
+  const heights: number[][] = [];
+  for (let r = 0; r < ROWS; r++) {
+    const row: number[] = [];
+    for (let c = 0; c < COLS; c++) {
+      const base = regionLevel(r);
+      const wall = tiles[r][c] === Tile.Wall;
+      row.push(wall || inMesa(c, r) ? base + 2 : base);
+    }
+    heights.push(row);
+  }
+  return heights;
+}
+
+const TILES = buildTiles();
+
 export const STARTER_ZONE: ZoneMap = {
   cols: COLS,
   rows: ROWS,
-  data: buildWorld(),
+  data: TILES,
+  heights: buildHeights(TILES),
 };
 
 export const STARTER_REGIONS: Region[] = [
@@ -64,21 +98,21 @@ export function regionAt(row: number): string {
   return found ? found.name : '';
 }
 
-export const STARTER_SPAWN = { x: 15.5, y: 3.5 };
+export const STARTER_SPAWN = { col: 15, row: 3 };
 
-export const STARTER_SMITH = { x: 18.5, y: 4.5, radius: 1.8 };
+export const STARTER_SMITH = { col: 18, row: 4, radius: 1.8 };
 
 export const STARTER_SPAWNS: SpawnDef[] = [
-  { id: 'a1', x: 5.5, y: 5.5, enemyId: 'slime', respawnSeconds: 6 },
-  { id: 'a2', x: 12.5, y: 4.5, enemyId: 'slime', respawnSeconds: 6 },
-  { id: 'a3', x: 20.5, y: 6.5, enemyId: 'slime', respawnSeconds: 6 },
-  { id: 'a4', x: 8.5, y: 11.5, enemyId: 'slime', respawnSeconds: 7 },
-  { id: 'a5', x: 24.5, y: 10.5, enemyId: 'slime', respawnSeconds: 7 },
+  { id: 'a1', col: 5, row: 5, enemyId: 'slime', respawnSeconds: 6 },
+  { id: 'a2', col: 12, row: 4, enemyId: 'slime', respawnSeconds: 6 },
+  { id: 'a3', col: 20, row: 6, enemyId: 'slime', respawnSeconds: 6 },
+  { id: 'a4', col: 8, row: 11, enemyId: 'slime', respawnSeconds: 7 },
+  { id: 'a5', col: 24, row: 10, enemyId: 'slime', respawnSeconds: 7 },
 
-  { id: 'b1', x: 6.5, y: 17.5, enemyId: 'slime', respawnSeconds: 7 },
-  { id: 'b2', x: 22.5, y: 16.5, enemyId: 'slime', respawnSeconds: 7 },
-  { id: 'b3', x: 12.5, y: 20.5, enemyId: 'brute', respawnSeconds: 12 },
-  { id: 'b4', x: 25.5, y: 20.5, enemyId: 'brute', respawnSeconds: 12 },
+  { id: 'b1', col: 6, row: 17, enemyId: 'slime', respawnSeconds: 7 },
+  { id: 'b2', col: 22, row: 16, enemyId: 'slime', respawnSeconds: 7 },
+  { id: 'b3', col: 12, row: 20, enemyId: 'brute', respawnSeconds: 12 },
+  { id: 'b4', col: 25, row: 20, enemyId: 'brute', respawnSeconds: 12 },
 
-  { id: 'boss', x: 15.5, y: 26.5, enemyId: 'titan', respawnSeconds: 60 },
+  { id: 'boss', col: 15, row: 26, enemyId: 'titan', respawnSeconds: 60 },
 ];

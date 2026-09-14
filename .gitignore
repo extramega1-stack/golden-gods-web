@@ -7,3 +7,6 @@ dist/
 # Proyecto nativo generado por Capacitor (lo crea el workflow de CI con "cap add android")
 android/
 ios/
+
+# Bundle temporal de los tests
+tests/.bundle/

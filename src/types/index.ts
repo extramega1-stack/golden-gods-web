@@ -16,6 +16,7 @@ export interface ZoneMap {
   cols: number;
   rows: number;
   data: number[][];
+  heights: number[][];
 }
 
 export interface Stats {
@@ -138,8 +139,8 @@ export interface EnemyDef {
 
 export interface SpawnDef {
   id: string;
-  x: number;
-  y: number;
+  col: number;
+  row: number;
   enemyId: string;
   respawnSeconds: number;
 }
