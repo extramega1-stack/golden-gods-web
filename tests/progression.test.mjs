@@ -160,6 +160,30 @@ const zBefore = dasher.worldZ;
 SkillSystem.cast(dasher, SKILLS.lunge, ctx, 3000);
 check('la embestida desplaza al héroe', dasher.worldZ > zBefore);
 
+// --- El anillo de área cubre la zona que daña ---
+const aoeRadii = [];
+const aoeCaster = makePlayer('aureon', 15, 12);
+SkillSystem.cast(
+  aoeCaster,
+  SKILLS.bash,
+  { enemies: [], spawnProjectile: () => {} },
+  9000,
+  {
+    ring: (_x, _y, _z, radius) => aoeRadii.push(radius),
+    burst: () => {},
+    floatingText: () => {},
+    dissolve: () => {},
+    shake: () => {},
+    update: () => {},
+    dispose: () => {},
+  }
+);
+check('el área dibuja su anillo', aoeRadii.length === 1);
+check(
+  'el anillo del área cubre el radio real',
+  aoeRadii.length === 1 && Math.abs(aoeRadii[0] - SKILLS.bash.radius * TILE_SIZE) < 1e-9
+);
+
 let ok = true;
 for (const [name, value] of Object.entries(results)) {
   console.log(`${value ? 'PASS' : 'FAIL'}  ${name}`);

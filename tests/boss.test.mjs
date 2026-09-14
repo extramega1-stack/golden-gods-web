@@ -91,6 +91,34 @@ const readyAfter = chained.slamReadyAt;
 BossSystem.update(chained, hero, 30000 + cooldownMs + 10);
 check('el golpe respeta su cooldown', chained.slamPendingAt === 0 && readyAfter > 30000 + cooldownMs && pendingAt > 0);
 
+// --- El aviso del golpe dibuja la zona real, no una más pequeña ---
+const ringRadii = [];
+const fakeFx = {
+  ring: (_x, _y, _z, radius) => ringRadii.push(radius),
+  burst: () => {},
+  floatingText: () => {},
+  dissolve: () => {},
+  shake: () => {},
+  update: () => {},
+  dispose: () => {},
+};
+
+const telegraphed = makeTitan();
+telegraphed.slamReadyAt = 0;
+BossSystem.update(telegraphed, hero, 40000);
+BossSystem.update(telegraphed, hero, 40000 + cooldownMs, fakeFx);
+
+const damageRadius = titanDef.slamRadius * TILE_SIZE;
+check('el aviso del golpe se dibuja una vez', ringRadii.length === 1);
+check(
+  'el aviso cubre la zona que realmente golpea',
+  ringRadii.length === 1 && Math.abs(ringRadii[0] - damageRadius) < 1e-9
+);
+check(
+  'el aviso no se queda en el valor en celdas',
+  ringRadii.length === 1 && Math.abs(ringRadii[0] - titanDef.slamRadius) > 1
+);
+
 let ok = true;
 for (const [name, value] of Object.entries(results)) {
   console.log(`${value ? 'PASS' : 'FAIL'}  ${name}`);

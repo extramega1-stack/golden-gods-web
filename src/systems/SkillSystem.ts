@@ -72,7 +72,8 @@ export class SkillSystem {
         CombatSystem.damage(enemy, damage, fx);
       }
     }
-    fx?.ring(player.worldX, player.worldY, player.worldZ, radius / TILE_SIZE, skill.color, 0.35);
+    // El radio ya está en unidades de mundo: el anillo debe cubrir la zona real.
+    fx?.ring(player.worldX, player.worldY, player.worldZ, radius, skill.color, 0.35);
     fx?.burst(player.worldX, player.worldY + 1, player.worldZ, skill.color, {
       count: 22,
       speed: 11,

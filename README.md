@@ -122,6 +122,17 @@ Todo el balance es dato, no código:
 - `data/zones.ts` — mapa, alturas, subáreas, apariciones y posición de la herrería.
 - `config/constants.ts` — tamaño de celda, altura por nivel, escalón máximo.
 
+### Dónde están los números "de tacto"
+
+Si algo se siente mal, casi todo se ajusta en un sitio concreto:
+
+- **Velocidad de cada dios**: `moveSpeed` en `data/gods.ts` (en celdas por segundo).
+- **Densidad de decoración**: `PROP_DENSITY` y `PROP_TABLES` en `world/props.ts`.
+- **Partículas** (tamaño, gravedad, pool): constantes al principio de `systems/Particles.ts`;
+  cuántas lanza cada efecto, en las llamadas a `fx.burst`.
+- **Balance de combate**: `data/enemies.ts`, `data/skills.ts` y `data/balance.ts`.
+- **Cámara**: `WC3_CAMERA` en `engine/Wc3Camera.ts` (ángulo, distancia, campo de visión).
+
 ## APK de Android
 
 El workflow `.github/workflows/android-apk.yml` empaqueta el juego con **Capacitor** y compila

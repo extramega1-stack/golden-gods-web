@@ -3,6 +3,11 @@ import type { SceneRoot } from '../engine/SceneRoot';
 
 const CAPACITY = 320;
 const GRAVITY = 9;
+/**
+ * Tamaño en unidades de mundo. Referencia: un personaje mide 3,4 unidades de alto y una
+ * celda 4. Con 0,8 las chispas parecían bolas; ~0,4 se leen como chispas.
+ */
+const PARTICLE_SIZE = 0.42;
 
 export interface BurstOptions {
   count?: number;
@@ -36,7 +41,7 @@ export class Particles {
     geometry.setAttribute('color', new THREE.BufferAttribute(this.colors, 3));
 
     const material = new THREE.PointsMaterial({
-      size: 0.8,
+      size: PARTICLE_SIZE,
       vertexColors: true,
       transparent: true,
       blending: THREE.AdditiveBlending,

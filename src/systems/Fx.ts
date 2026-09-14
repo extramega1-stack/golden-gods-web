@@ -60,7 +60,12 @@ export class Fx {
     this.texts.push({ el, x, y, z, age: 0, ttl, rise: 0 });
   }
 
-  ring(x: number, y: number, z: number, radius: number, color: number, ttl = 0.4): void {
+  /**
+   * Anillo en el suelo. `radiusWorld` va en unidades de mundo, no en celdas: multiplicar
+   * por TILE_SIZE es responsabilidad de quien llama. Confundir las dos unidades dibuja un
+   * aviso más pequeño que la zona que realmente golpea.
+   */
+  ring(x: number, y: number, z: number, radiusWorld: number, color: number, ttl = 0.4): void {
     const geometry = new THREE.RingGeometry(0.55, 1, 32);
     geometry.rotateX(-Math.PI / 2);
     const material = new THREE.MeshBasicMaterial({
@@ -73,7 +78,7 @@ export class Fx {
     const mesh = new THREE.Mesh(geometry, material);
     mesh.position.set(x, y + 0.15, z);
     this.root.add(mesh);
-    this.rings.push({ mesh, age: 0, ttl, maxRadius: radius });
+    this.rings.push({ mesh, age: 0, ttl, maxRadius: radiusWorld });
   }
 
   dissolve(object: THREE.Object3D, ttl = 0.35): void {

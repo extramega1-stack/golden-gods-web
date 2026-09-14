@@ -70,7 +70,9 @@ export class BossSystem {
       enemy.stats.attack * (enemy.def.slamDamageMult ?? 1.5)
     );
 
-    fx?.ring(enemy.slamX, enemy.worldY, enemy.slamZ, enemy.def.slamRadius ?? 3, 0xff7a5a, 0.45);
+    // El aviso tiene que cubrir exactamente la zona que golpea, en unidades de mundo.
+    const radiusWorld = (enemy.def.slamRadius ?? 3) * TILE_SIZE;
+    fx?.ring(enemy.slamX, enemy.worldY, enemy.slamZ, radiusWorld, 0xff7a5a, 0.45);
   }
 
   private static resolveSlam(enemy: EnemyUnit, player: PlayerUnit, now: number, fx?: Fx): void {
