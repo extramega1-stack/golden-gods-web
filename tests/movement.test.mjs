@@ -6,6 +6,7 @@ import {
   PlayerUnit,
   GODS,
   SaveManager,
+  createQuestState,
   cellToWorld,
   STARTER_ZONE,
   STARTER_SPAWN,
@@ -91,7 +92,7 @@ const hero = new PlayerUnit(refs, spawn.x, spawn.z, GODS[0]);
 hero.level = 4;
 hero.gold = 123;
 
-const save = SaveManager.capture(hero, hero.god.id);
+const save = SaveManager.capture(hero, hero.god.id, createQuestState());
 check('captura del héroe', save.godId === GODS[0].id && save.level === 4 && save.gold === 123);
 check('la posición se guarda en x/z', near(save.x, hero.worldX) && near(save.z, hero.worldZ));
 check('mochila y equipo vacíos al empezar', save.inventory.length === 0 && save.equipped.weapon === null);

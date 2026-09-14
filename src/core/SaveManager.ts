@@ -1,5 +1,12 @@
 import { SAVE_KEY, SAVE_VERSION } from '../config/constants';
 import type { InventoryItem, ItemSlot, SaveableHero } from '../types';
+import type { QuestState } from '../systems/QuestSystem';
+
+/** Solo lo que hay que recordar de las misiones; nivel y oro ya van en el guardado. */
+export interface SavedQuests {
+  completed: string[];
+  progress: Record<string, number>;
+}
 
 export interface SaveData {
   version: number;
@@ -11,6 +18,7 @@ export interface SaveData {
   talentRanks: Record<string, number>;
   inventory: InventoryItem[];
   equipped: Record<ItemSlot, InventoryItem | null>;
+  quests: SavedQuests;
   x: number;
   z: number;
   savedAt: number;
@@ -40,7 +48,7 @@ function checksum(text: string): string {
 }
 
 export class SaveManager {
-  static capture(hero: SaveableHero, godId: string): SaveData {
+  static capture(hero: SaveableHero, godId: string, quests: QuestState): SaveData {
     return {
       version: SAVE_VERSION,
       godId,
@@ -53,6 +61,10 @@ export class SaveManager {
       equipped: {
         weapon: hero.equipped.weapon ? { ...hero.equipped.weapon } : null,
         armor: hero.equipped.armor ? { ...hero.equipped.armor } : null,
+      },
+      quests: {
+        completed: [...quests.completed],
+        progress: { ...quests.progress },
       },
       x: hero.worldX,
       z: hero.worldZ,

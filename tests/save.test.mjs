@@ -6,6 +6,8 @@ import {
   TalentSystem,
   SaveManager,
   applySaveToHero,
+  createQuestState,
+  advance,
   getGod,
   cellToWorld,
   STARTER_ZONE,
@@ -55,11 +57,23 @@ const attackBefore = original.stats.attack;
 const maxHpBefore = original.stats.maxHp;
 // La mejora del arma cuesta oro, así que el valor a comparar es el de después.
 const goldBefore = original.gold;
+// Progreso de misiones a medio camino: la primera cerrada y la segunda empezada.
+const quests = createQuestState();
+for (let i = 0; i < 3; i++) {
+  advance(quests, { level: 1, gold: 0, killedEnemy: 'slime' });
+}
+advance(quests, { level: 6, gold: goldBefore, killedEnemy: 'slime' });
 
 // --- Guardar en almacenamiento, con el mismo camino que usa el juego ---
-SaveManager.persist(SaveManager.capture(original, original.god.id));
+SaveManager.persist(SaveManager.capture(original, original.god.id, quests));
 const stored = SaveManager.load();
 check('la partida se guarda y se recupera', stored !== null && stored.godId === 'kael');
+check(
+  'se guarda el progreso de las misiones',
+  stored.quests.completed.length === 1 &&
+    stored.quests.completed[0] === 'primeros-pasos' &&
+    stored.quests.progress['prado-limpio'] === 1
+);
 
 // --- Continuar en un héroe nuevo ---
 const reloaded = makeHero();
@@ -87,9 +101,17 @@ check('tras continuar, los identificadores siguen siendo únicos', new Set(allUi
 check('y el objeto nuevo se puede equipar', InventorySystem.equip(reloaded, freshUid));
 
 // --- Código de héroe ---
-const code = SaveManager.exportCode(SaveManager.capture(original, original.god.id));
+const code = SaveManager.exportCode(SaveManager.capture(original, original.god.id, quests));
 const fromCode = SaveManager.importCode(code);
 check('el código de héroe se importa', fromCode !== null && fromCode.level === 6);
+check(
+  'el código conserva las misiones',
+  fromCode.quests.completed.length === 1 && fromCode.quests.progress['prado-limpio'] === 1
+);
+check(
+  'un guardado de versión antigua se rechaza',
+  SaveManager.importCode(SaveManager.exportCode({ ...stored, version: 2 })) === null
+);
 const restored = makeHero();
 applySaveToHero(restored, fromCode);
 check('el héroe importado del código queda igual', near(restored.stats.attack, attackBefore));

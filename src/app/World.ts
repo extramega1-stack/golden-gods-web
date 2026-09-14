@@ -133,6 +133,7 @@ export class World {
 
     if (save) {
       applySaveToHero(this.player, save);
+      this.restoreQuests(save);
     }
 
     this.spawnSystem = new SpawnSystem(STARTER_SPAWNS, (def) => this.createEnemy(def));
@@ -370,7 +371,18 @@ export class World {
     if (this.disposed) {
       return;
     }
-    SaveManager.persist(SaveManager.capture(this.player, this.god.id));
+    SaveManager.persist(SaveManager.capture(this.player, this.god.id, this.questState));
+  }
+
+  /** Recupera el progreso de misiones y lo sincroniza con el héroe ya restaurado. */
+  private restoreQuests(save: SaveData): void {
+    const saved = save.quests;
+    if (saved) {
+      this.questState.completed = [...saved.completed];
+      this.questState.progress = { ...saved.progress };
+    }
+    this.questState.level = this.player.level;
+    this.questState.gold = this.player.gold;
   }
 
   private saveNowAndReport(): void {
@@ -379,7 +391,9 @@ export class World {
   }
 
   private exportHero(): void {
-    const code = SaveManager.exportCode(SaveManager.capture(this.player, this.god.id));
+    const code = SaveManager.exportCode(
+      SaveManager.capture(this.player, this.god.id, this.questState)
+    );
     if (navigator.clipboard?.writeText) {
       navigator.clipboard.writeText(code).catch(() => undefined);
     }

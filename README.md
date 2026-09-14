@@ -17,7 +17,13 @@ acantilados, héroe y cámara, combate, progresión y UI, selección de dioses, 
 jefe con fases, bots de party y población simulada, persistencia, y PWA y APK revalidados.
 
 El juego guarda solo cada 15 segundos y al cerrar la pestaña. Si hay partida, el menú ofrece
-**CONTINUAR**; elegir un dios nuevo la descarta.
+**CONTINUAR**; elegir un dios nuevo la descarta. El guardado incluye también el **progreso de
+misiones**.
+
+> El formato de guardado va por la **versión 3**. Al añadir las misiones subió la versión, así que
+> los guardados anteriores se descartan a propósito (el menú simplemente no ofrecerá continuar).
+> La versión vive dentro del archivo, no en la clave de almacenamiento, para que subirla invalide
+> lo viejo sin dejar basura con nombres raros.
 
 ## Requisitos
 
