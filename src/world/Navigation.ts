@@ -40,10 +40,11 @@ export class Navigation {
    * escalón permitido.
    */
   isAreaWalkable(x: number, z: number, radius: number, currentLevel: number): boolean {
-    const minCol = Math.floor((x - radius) / TILE_SIZE);
-    const maxCol = Math.floor((x + radius) / TILE_SIZE);
-    const minRow = Math.floor((z - radius) / TILE_SIZE);
-    const maxRow = Math.floor((z + radius) / TILE_SIZE);
+    const size = TILE_SIZE;
+    const minCol = Math.floor((x - radius) / size);
+    const maxCol = Math.floor((x + radius) / size);
+    const minRow = Math.floor((z - radius) / size);
+    const maxRow = Math.floor((z + radius) / size);
 
     for (let row = minRow; row <= maxRow; row++) {
       for (let col = minCol; col <= maxCol; col++) {

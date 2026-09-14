@@ -1,6 +1,15 @@
 export { Navigation } from '../src/world/Navigation.ts';
 export { cellToWorld, worldToCell, levelToWorldY, clampToMap } from '../src/world/heightmap.ts';
 export { buildTerrainMesh, EDGE_DROP_LEVEL } from '../src/world/TerrainMesh.ts';
+export { Zone } from '../src/world/Zone.ts';
 export { STARTER_ZONE, STARTER_SPAWN, STARTER_SPAWNS } from '../src/data/zones.ts';
 export { TILE_SIZE, HEIGHT_STEP, MAX_STEP_LEVELS } from '../src/config/constants.ts';
 export { Tile } from '../src/types/index.ts';
+export { SceneRoot } from '../src/engine/SceneRoot.ts';
+export { Wc3Camera, WC3_CAMERA } from '../src/engine/Wc3Camera.ts';
+export { Unit } from '../src/entities/Unit.ts';
+export { PlayerUnit } from '../src/entities/PlayerUnit.ts';
+export { GODS, getGod } from '../src/data/gods.ts';
+export { SaveManager } from '../src/core/SaveManager.ts';
+export { InputManager } from '../src/core/InputManager.ts';
+export * as THREE from 'three';
