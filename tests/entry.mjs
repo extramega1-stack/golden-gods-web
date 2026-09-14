@@ -19,6 +19,8 @@ export {
   BOT_MODELS,
   POPULATION_MODELS,
   ALL_MODEL_IDS,
+  ALL_WEAPON_IDS,
+  MODEL_WEAPONS,
   pickAnimation,
   resolveAnimations,
 } from '../src/assets/manifest.ts';

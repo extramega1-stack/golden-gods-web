@@ -1,7 +1,7 @@
 import { Unit, type WorldRefs } from './Unit';
 import { createUnitMesh, wrapModel } from './MeshFactory';
 import { TILE_SIZE } from '../config/constants';
-import { BOT_MODELS, MODEL_HEIGHTS } from '../assets/manifest';
+import { BOT_MODELS, MODEL_HEIGHTS, MODEL_WEAPONS } from '../assets/manifest';
 import type { ModelProvider } from './ModelProvider';
 import type { BotDef } from '../data/bots';
 
@@ -21,7 +21,9 @@ export class PartyBotUnit extends Unit {
     models?: ModelProvider | null
   ) {
     const modelId = BOT_MODELS[def.id];
-    const instantiated = modelId ? models?.instantiate(modelId, MODEL_HEIGHTS.bot) ?? null : null;
+    const instantiated = modelId
+      ? models?.instantiate(modelId, MODEL_HEIGHTS.bot, MODEL_WEAPONS[modelId] ?? []) ?? null
+      : null;
 
     const mesh = instantiated
       ? wrapModel(instantiated.root)

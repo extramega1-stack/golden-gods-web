@@ -1,7 +1,7 @@
 import { Unit, type WorldRefs } from './Unit';
 import { createUnitMesh, wrapModel } from './MeshFactory';
 import { TILE_SIZE } from '../config/constants';
-import { ENEMY_MODELS, MODEL_HEIGHTS } from '../assets/manifest';
+import { ENEMY_MODELS, MODEL_HEIGHTS, MODEL_WEAPONS } from '../assets/manifest';
 import type { ModelProvider } from './ModelProvider';
 import type { EnemyDef } from '../types';
 
@@ -35,7 +35,9 @@ export class EnemyUnit extends Unit {
     const primitiveHeight = radius * 2.4;
     const modelHeight = ENEMY_MODEL_HEIGHTS[def.id] ?? primitiveHeight;
     const modelId = ENEMY_MODELS[def.id];
-    const instantiated = modelId ? models?.instantiate(modelId, modelHeight) ?? null : null;
+    const instantiated = modelId
+      ? models?.instantiate(modelId, modelHeight, MODEL_WEAPONS[modelId] ?? []) ?? null
+      : null;
 
     const mesh = instantiated
       ? wrapModel(instantiated.root)

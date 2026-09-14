@@ -85,10 +85,10 @@ scripts/      generación de iconos y ejecución de tests
 
 ## Arte
 
-Los personajes y la decoración son **CC0** (KayKit, de Kay Lousberg): ver `ATTRIBUTIONS.md`.
-`npm run models` y `npm run props` los descargan, descartan lo que no se usa y los dejan en
-`public/models/`. Los ficheros resultantes **se versionan**, así que solo hay que ejecutar esos
-scripts si quieres cambiar o actualizar el arte.
+Los personajes, las armas y la decoración son **CC0** (KayKit, de Kay Lousberg): ver
+`ATTRIBUTIONS.md`. `npm run models`, `npm run props` y `npm run weapons` los descargan,
+descartan lo que no se usa y los dejan en `public/models/`. Los ficheros resultantes **se
+versionan**, así que solo hay que ejecutar esos scripts si quieres cambiar o actualizar el arte.
 
 ### Cómo funciona el 3D
 
@@ -105,6 +105,9 @@ scripts si quieres cambiar o actualizar el arte.
   objeto. Son decorativos, no bloquean el paso.
 - **Personajes**: modelos GLB con esqueleto y un `AnimationMixer` por unidad; si un modelo no
   carga, la entidad cae a una primitiva generada por código.
+- **Armas**: cada personaje se cuelga el arma del nodo de enganche que trae el propio modelo
+  (`1H_Sword`, `2H_Axe`, `Round_Shield`…). Ojo: three sanea los nombres de nodo al cargar glTF
+  (le quita puntos), así que se busca con su misma regla y no con la cadena literal.
 - **UI en DOM** sobre el canvas, en vez de UI dibujada en el motor.
 
 ### Personalizar contenido

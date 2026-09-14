@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { TILE_SIZE } from '../config/constants';
 import { levelToWorldY } from '../world/heightmap';
 import { createUnitMesh, wrapModel } from './MeshFactory';
+import { MODEL_WEAPONS } from '../assets/manifest';
 import type { AnimationController } from './AnimationController';
 import type { ModelProvider } from './ModelProvider';
 import type { WorldRefs } from './Unit';
@@ -49,7 +50,9 @@ export class PopulationHero3D {
     this.worldX = x;
     this.worldZ = z;
 
-    const instantiated = modelId ? models?.instantiate(modelId, MODEL_HEIGHT) ?? null : null;
+    const instantiated = modelId
+      ? models?.instantiate(modelId, MODEL_HEIGHT, MODEL_WEAPONS[modelId] ?? []) ?? null
+      : null;
     this.mesh = instantiated
       ? wrapModel(instantiated.root)
       : createUnitMesh({ color, radius: 0.85, height: 2.9, markerColor: 0x2a2438 });

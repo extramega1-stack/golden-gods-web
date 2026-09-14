@@ -1,8 +1,9 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
+import { PropertyBinding } from 'three';
 import { AnimationController } from '../entities/AnimationController';
-import { resolveAnimations, type AnimState } from './manifest';
+import { resolveAnimations, type AnimState, type WeaponSpec } from './manifest';
 import type { InstantiatedModel, ModelProvider } from '../entities/ModelProvider';
 
 interface LoadedModel {
@@ -35,7 +36,7 @@ export class AssetLoader implements ModelProvider {
     return this.scenes.get(key) ?? null;
   }
 
-  /** Precarga los props y deja una sola copia del atlas compartido en memoria. */
+  /** Precarga los props y unifica texturas. */
   async preloadProps(ids: string[]): Promise<void> {
     await Promise.all(
       ids.map((id) =>
@@ -45,7 +46,20 @@ export class AssetLoader implements ModelProvider {
         })
       )
     );
-    this.sharePropAtlas();
+    this.shareTextures();
+  }
+
+  /** Precarga las armas (GLB estáticos que se cuelgan de un nodo del personaje). */
+  async preloadWeapons(ids: string[]): Promise<void> {
+    await Promise.all(
+      ids.map((id) =>
+        this.loadScene(`weapons/${id}`, `models/weapons/${id}.glb`).catch((error) => {
+          console.warn(`No se pudo cargar el arma "${id}".`, error);
+          return null;
+        })
+      )
+    );
+    this.shareTextures();
   }
 
   collectPropModels(ids: string[]): Map<string, THREE.Object3D> {
@@ -60,34 +74,34 @@ export class AssetLoader implements ModelProvider {
   }
 
   /**
-   * Cada prop trae embebida la misma imagen de 1024x1024. Sin esto habría 22 texturas
-   * idénticas en la GPU (unas 88 MB); con esto queda una sola.
+   * Cada GLB trae su propia copia incrustada de la imagen. Como three conserva el nombre
+   * de la imagen en la textura, se pueden agrupar: los tres esqueletos comparten su
+   * atlas, los 22 props comparten el suyo y las armas reutilizan la textura de su
+   * personaje. Sin esto habría decenas de texturas idénticas en la GPU.
    */
-  private sharePropAtlas(): void {
-    let shared: THREE.Texture | null = null;
+  private shareTextures(): void {
+    const kept = new Map<string, THREE.Texture>();
     const redundant: THREE.Texture[] = [];
 
     const adopt = (material: THREE.Material): void => {
       const withMap = material as THREE.Material & { map?: THREE.Texture | null };
       const map = withMap.map;
-      if (!map) {
+      if (!map || !map.name) {
         return;
       }
-      if (shared === null) {
-        shared = map;
+      const existing = kept.get(map.name);
+      if (!existing) {
+        kept.set(map.name, map);
         return;
       }
-      if (map !== shared) {
-        withMap.map = shared;
+      if (existing !== map) {
+        withMap.map = existing;
         material.needsUpdate = true;
         redundant.push(map);
       }
     };
 
-    for (const [key, scene] of this.scenes) {
-      if (!key.startsWith('props/')) {
-        continue;
-      }
+    for (const scene of this.scenes.values()) {
       scene.traverse((child) => {
         const mesh = child as THREE.Mesh;
         if (!(mesh as unknown as { isMesh?: boolean }).isMesh) {
@@ -140,13 +154,14 @@ export class AssetLoader implements ModelProvider {
         })
       )
     );
+    this.shareTextures();
   }
 
   isReady(id: string): boolean {
     return this.cache.has(id);
   }
 
-  instantiate(id: string, targetHeight: number): InstantiatedModel | null {
+  instantiate(id: string, targetHeight: number, weapons: WeaponSpec[] = []): InstantiatedModel | null {
     const loaded = this.cache.get(id);
     if (!loaded) {
       return null;
@@ -164,10 +179,49 @@ export class AssetLoader implements ModelProvider {
     const scaled = new THREE.Box3().setFromObject(root);
     root.position.y -= scaled.min.y;
 
+    AssetLoader.attachWeapons(root, weapons, this.scenes);
+
     const mixer = new THREE.AnimationMixer(root);
     const controller = new AnimationController(mixer, loaded.animations);
     controller.setLocomotion('idle');
 
     return { root, controller };
+  }
+
+  /**
+   * Cuelga cada arma del nodo de enganche del personaje. three sanea los nombres al
+   * cargar glTF (le quita puntos, corchetes, etc.), así que se busca con su misma regla
+   * en vez de duplicarla a mano.
+   */
+  private static attachWeapons(
+    root: THREE.Object3D,
+    weapons: WeaponSpec[],
+    scenes: Map<string, THREE.Group>
+  ): void {
+    for (const spec of weapons) {
+      const model = scenes.get(`weapons/${spec.weapon}`);
+      if (!model) {
+        continue;
+      }
+
+      const wanted = PropertyBinding.sanitizeNodeName(spec.slot);
+      let slot: THREE.Object3D | null = null;
+      root.traverse((child) => {
+        if (slot === null && PropertyBinding.sanitizeNodeName(child.name) === wanted) {
+          slot = child;
+        }
+      });
+
+      if (slot === null) {
+        console.warn(`El personaje no tiene el nodo de enganche "${spec.slot}".`);
+        continue;
+      }
+
+      const weapon = model.clone(true);
+      if (spec.scale !== undefined) {
+        weapon.scale.setScalar(spec.scale);
+      }
+      (slot as THREE.Object3D).add(weapon);
+    }
   }
 }

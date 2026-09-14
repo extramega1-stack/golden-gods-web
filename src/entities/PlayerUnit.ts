@@ -1,7 +1,7 @@
 import { createUnitMesh, wrapModel } from './MeshFactory';
 import { Unit, type WorldRefs } from './Unit';
 import { ProgressionSystem } from '../systems/ProgressionSystem';
-import { GOD_MODELS, MODEL_HEIGHTS } from '../assets/manifest';
+import { GOD_MODELS, MODEL_HEIGHTS, MODEL_WEAPONS } from '../assets/manifest';
 import type { ModelProvider } from './ModelProvider';
 import type {
   Buff,
@@ -45,7 +45,9 @@ export class PlayerUnit extends Unit {
     models?: ModelProvider | null
   ) {
     const modelId = GOD_MODELS[god.id];
-    const instantiated = modelId ? models?.instantiate(modelId, MODEL_HEIGHTS.god) ?? null : null;
+    const instantiated = modelId
+      ? models?.instantiate(modelId, MODEL_HEIGHTS.god, MODEL_WEAPONS[modelId] ?? []) ?? null
+      : null;
 
     const mesh = instantiated
       ? wrapModel(instantiated.root)

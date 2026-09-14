@@ -70,6 +70,36 @@ export const POPULATION_MODELS = ['barbarian', 'rogue', 'knight', 'mage'];
 /** Semilla del reparto de decoración: fija para que el mundo sea siempre el mismo. */
 export const PROPS_SEED = 20260914;
 
+export interface WeaponSpec {
+  /** Nodo de enganche dentro del personaje (se sanea como hace three al cargar glTF). */
+  slot: string;
+  /** Id del arma en public/models/weapons/. */
+  weapon: string;
+  scale?: number;
+}
+
+/**
+ * Qué lleva cada personaje en la mano. Los nodos de enganche son los que traen los
+ * propios modelos de KayKit (`1H_Sword`, `2H_Axe`, `Round_Shield`...). Los esqueletos
+ * solo tienen `handslot.l/r`, así que se les cuelga del derecho.
+ */
+export const MODEL_WEAPONS: Record<string, WeaponSpec[]> = {
+  knight: [
+    { slot: '1H_Sword', weapon: 'sword-1h' },
+    { slot: 'Round_Shield', weapon: 'shield-round' },
+  ],
+  barbarian: [{ slot: '2H_Axe', weapon: 'axe-2h' }],
+  rogue: [{ slot: '2H_Crossbow', weapon: 'crossbow-2h' }],
+  mage: [{ slot: '2H_Staff', weapon: 'staff' }],
+  'skeleton-minion': [{ slot: 'handslot.r', weapon: 'dagger' }],
+  'skeleton-warrior': [{ slot: 'handslot.r', weapon: 'axe-2h' }],
+  'skeleton-mage': [{ slot: 'handslot.r', weapon: 'staff' }],
+};
+
+export const ALL_WEAPON_IDS = [
+  ...new Set(Object.values(MODEL_WEAPONS).flatMap((specs) => specs.map((spec) => spec.weapon))),
+];
+
 /** Todos los modelos que hay que precargar. */
 export const ALL_MODEL_IDS = [
   ...new Set([

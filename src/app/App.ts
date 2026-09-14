@@ -9,7 +9,7 @@ import { Joystick } from '../ui/Joystick';
 import { HeroSelect } from '../ui/HeroSelect';
 import { World } from './World';
 import { AssetLoader } from '../assets/AssetLoader';
-import { ALL_MODEL_IDS } from '../assets/manifest';
+import { ALL_MODEL_IDS, ALL_WEAPON_IDS } from '../assets/manifest';
 import { ALL_PROP_IDS } from '../world/props';
 import { getGod } from '../data/gods';
 import { SaveManager, type SaveData } from '../core/SaveManager';
@@ -85,13 +85,15 @@ export class App {
     return Promise.all([
       this.loader.preload(ALL_MODEL_IDS),
       this.loader.preloadProps(ALL_PROP_IDS),
+      this.loader.preloadWeapons(ALL_WEAPON_IDS),
     ]);
   }
 
   private assetsReady(): boolean {
     return (
       ALL_MODEL_IDS.every((id) => this.loader.isReady(id)) &&
-      ALL_PROP_IDS.every((id) => this.loader.getScene(`props/${id}`) !== null)
+      ALL_PROP_IDS.every((id) => this.loader.getScene(`props/${id}`) !== null) &&
+      ALL_WEAPON_IDS.every((id) => this.loader.getScene(`weapons/${id}`) !== null)
     );
   }
 
