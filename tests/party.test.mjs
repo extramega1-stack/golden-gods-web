@@ -90,10 +90,16 @@ check(
 check('la navegación expone el tamaño del mapa', zone.nav.cols === 30 && zone.nav.rows === 30);
 
 // Replica la búsqueda de punto de aparición de la población (misma lógica, sin DOM).
+// Con azar fijo: un test que depende de Math.random puede fallar "a veces".
+let spawnSeed = 12345;
+const nextRandom = () => {
+  spawnSeed = (spawnSeed * 1103515245 + 12345) & 0x7fffffff;
+  return spawnSeed / 0x7fffffff;
+};
 const randomSpawn = () => {
   for (let i = 0; i < 30; i++) {
-    const col = 1 + Math.floor(Math.random() * (zone.nav.cols - 2));
-    const row = 1 + Math.floor(Math.random() * (zone.nav.rows - 2));
+    const col = 1 + Math.floor(nextRandom() * (zone.nav.cols - 2));
+    const row = 1 + Math.floor(nextRandom() * (zone.nav.rows - 2));
     if (zone.nav.isWalkableCell(col, row)) {
       return { col, row };
     }

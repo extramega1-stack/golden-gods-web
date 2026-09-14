@@ -30,17 +30,21 @@ const makeHero = (godId = 'kael') => {
 };
 
 // --- Botín ---
+// El stub de Math.random se restaura siempre, pase lo que pase.
 const originalRandom = Math.random;
-Math.random = () => 0;
-const generous = LootSystem.roll(ENEMIES.slime);
-check('el botín da el oro del enemigo', generous.gold === ENEMIES.slime.goldReward);
-check('con tirada baja suelta el primer objeto de la tabla', generous.itemId === 'cloth_armor');
+try {
+  Math.random = () => 0;
+  const generous = LootSystem.roll(ENEMIES.slime);
+  check('el botín da el oro del enemigo', generous.gold === ENEMIES.slime.goldReward);
+  check('con tirada baja suelta el primer objeto de la tabla', generous.itemId === 'cloth_armor');
 
-Math.random = () => 0.99;
-const stingy = LootSystem.roll(ENEMIES.slime);
-check('con tirada alta no suelta objeto', stingy.itemId === null);
-check('aun sin objeto, da oro', stingy.gold === ENEMIES.slime.goldReward);
-Math.random = originalRandom;
+  Math.random = () => 0.99;
+  const stingy = LootSystem.roll(ENEMIES.slime);
+  check('con tirada alta no suelta objeto', stingy.itemId === null);
+  check('aun sin objeto, da oro', stingy.gold === ENEMIES.slime.goldReward);
+} finally {
+  Math.random = originalRandom;
+}
 
 // --- Inventario ---
 const hero = makeHero();

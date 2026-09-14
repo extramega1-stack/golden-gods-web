@@ -39,10 +39,16 @@ const rngB = createRng(1);
 check('el generador es reproducible', rngA() === rngB() && rngA() === rngB());
 check(
   'el generador reparte en [0,1)',
-  Array.from({ length: 200 }, () => createRng(3)()).every(() => {
-    const value = createRng(Math.random() * 1000)();
-    return value >= 0 && value < 1;
-  })
+  (() => {
+    const rng = createRng(99);
+    for (let i = 0; i < 500; i++) {
+      const value = rng();
+      if (!(value >= 0 && value < 1)) {
+        return false;
+      }
+    }
+    return true;
+  })()
 );
 
 // --- El reparto es sensato ---
