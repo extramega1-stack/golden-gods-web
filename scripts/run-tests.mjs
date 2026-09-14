@@ -16,11 +16,24 @@ const files = readdirSync('tests')
   .sort();
 
 let failed = 0;
+const failures = [];
+
 for (const file of files) {
   console.log(`\n=== ${file} ===`);
   const result = spawnSync(process.execPath, [`tests/${file}`], { stdio: 'inherit' });
-  if (result.status !== 0) {
+  const status = result.status;
+
+  if (status !== 0) {
     failed += 1;
+    // Si una suite muere en silencio, sin esta línea no hay forma de saber cuál fue.
+    failures.push(`${file} (código ${status ?? 'señal'}${result.signal ? `, señal ${result.signal}` : ''})`);
+  }
+}
+
+if (failures.length > 0) {
+  console.log('\nSuites que fallaron:');
+  for (const failure of failures) {
+    console.log(`  - ${failure}`);
   }
 }
 
