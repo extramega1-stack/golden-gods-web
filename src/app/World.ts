@@ -1,3 +1,6 @@
+import type * as THREE from 'three';
+import { PropField } from '../world/PropField';
+import { planProps } from '../world/props';
 import { cellToWorld, levelToWorldY } from '../world/heightmap';
 import { PlayerUnit } from '../entities/PlayerUnit';
 import { EnemyUnit } from '../entities/EnemyUnit';
@@ -28,7 +31,14 @@ import { ENEMIES } from '../data/enemies';
 import { PARTY_BOTS } from '../data/bots';
 import { getItem } from '../data/items';
 import { PLAYER_RESPAWN_SECONDS, expToNext } from '../data/balance';
-import { STARTER_SMITH, STARTER_SPAWN, STARTER_SPAWNS, regionAt } from '../data/zones';
+import { PROPS_SEED } from '../assets/manifest';
+import {
+  STARTER_SMITH,
+  STARTER_SPAWN,
+  STARTER_SPAWNS,
+  STARTER_ZONE,
+  regionAt,
+} from '../data/zones';
 import { TILE_SIZE } from '../config/constants';
 import type { InputManager } from '../core/InputManager';
 import type { Wc3Camera } from '../engine/Wc3Camera';
@@ -56,6 +66,7 @@ export class World {
   private readonly smith: { x: number; z: number };
   private readonly bots: PartyBotUnit[] = [];
   private readonly population: PopulationSystem;
+  private readonly propField: PropField;
 
   private pickups: Pickup3D[] = [];
   private projectiles: Projectile3D[] = [];
@@ -80,13 +91,27 @@ export class World {
     private readonly input: InputManager,
     private readonly god: GodDef,
     save: SaveData | null,
-    private readonly models: ModelProvider | null = null
+    private readonly models: ModelProvider | null = null,
+    propModels: Map<string, THREE.Object3D> = new Map()
   ) {
     this.container = document.createElement('div');
     this.container.className = 'world-ui';
     uiHost.appendChild(this.container);
 
     this.fx = new Fx(this.container, this.refs.root, this.rig);
+
+    // Decoración del terreno, repartida de forma determinista y dejando libres los
+    // sitios con contenido: inicio, herrería y puntos de aparición.
+    this.propField = new PropField(
+      this.refs.root,
+      this.refs.nav,
+      propModels,
+      planProps(STARTER_ZONE, PROPS_SEED, [
+        { col: STARTER_SPAWN.col, row: STARTER_SPAWN.row, radius: 3 },
+        { col: STARTER_SMITH.col, row: STARTER_SMITH.row, radius: 2.5 },
+        ...STARTER_SPAWNS.map((spawn) => ({ col: spawn.col, row: spawn.row, radius: 1.5 })),
+      ])
+    );
 
     const spawn = cellToWorld(STARTER_SPAWN.col, STARTER_SPAWN.row);
     this.player = new PlayerUnit(this.refs, spawn.x, spawn.z, god, models);
@@ -485,6 +510,7 @@ export class World {
       bot.dispose();
     }
     this.population.dispose();
+    this.propField.dispose();
     this.enemies.length = 0;
     this.bots.length = 0;
     this.dyingAnimations.length = 0;

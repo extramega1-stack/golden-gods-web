@@ -83,6 +83,13 @@ tests/        suites de lógica pura (entradas vía esbuild)
 scripts/      generación de iconos y ejecución de tests
 ```
 
+## Arte
+
+Los personajes y la decoración son **CC0** (KayKit, de Kay Lousberg): ver `ATTRIBUTIONS.md`.
+`npm run models` y `npm run props` los descargan, descartan lo que no se usa y los dejan en
+`public/models/`. Los ficheros resultantes **se versionan**, así que solo hay que ejecutar esos
+scripts si quieres cambiar o actualizar el arte.
+
 ### Cómo funciona el 3D
 
 - **Cámara tipo WC3**: perspectiva con 55° de inclinación y yaw fijo, con seguimiento suavizado y
@@ -93,6 +100,11 @@ scripts/      generación de iconos y ejecución de tests
 - **Navegación**: rejilla con **regla de escalón**; no se salva un desnivel de más de un nivel.
 - **Entidades agnósticas del motor**: `Unit` guarda posición, stats y vida, y expone un handle de
   Three.js; la lógica no depende del render.
+- **Decoración**: árboles, rocas y objetos repartidos con una semilla fija (mismo mundo siempre)
+  y dibujados con `InstancedMesh`: una llamada de dibujo por tipo de prop en vez de una por
+  objeto. Son decorativos, no bloquean el paso.
+- **Personajes**: modelos GLB con esqueleto y un `AnimationMixer` por unidad; si un modelo no
+  carga, la entidad cae a una primitiva generada por código.
 - **UI en DOM** sobre el canvas, en vez de UI dibujada en el motor.
 
 ### Personalizar contenido
@@ -133,6 +145,8 @@ compilar pasa `npm test`.
 - `boss` — fases, aviso del golpe sísmico y esquiva.
 - `party` — compañeros que siguen, entran en combate y respetan la correa del héroe.
 - `save` — guardado, continuar, código de héroe, rechazo de códigos corruptos y partida limpia.
+- `assets` — emparejado de animaciones y que cada GLB de personaje exista y cubra los 7 estados.
+- `props` — reparto determinista de decoración, zonas reservadas y que cada prop tenga su GLB.
 
 ## Limitaciones conocidas
 

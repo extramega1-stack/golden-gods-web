@@ -18,6 +18,94 @@ interface LoadedModel {
 export class AssetLoader implements ModelProvider {
   private readonly loader = new GLTFLoader();
   private readonly cache = new Map<string, LoadedModel>();
+  private readonly scenes = new Map<string, THREE.Group>();
+
+  /** Carga un GLB estático (props del terreno) sin mirar animaciones. */
+  async loadScene(key: string, path: string): Promise<THREE.Group> {
+    const cached = this.scenes.get(key);
+    if (cached) {
+      return cached;
+    }
+    const gltf = await this.loader.loadAsync(path);
+    this.scenes.set(key, gltf.scene);
+    return gltf.scene;
+  }
+
+  getScene(key: string): THREE.Group | null {
+    return this.scenes.get(key) ?? null;
+  }
+
+  /** Precarga los props y deja una sola copia del atlas compartido en memoria. */
+  async preloadProps(ids: string[]): Promise<void> {
+    await Promise.all(
+      ids.map((id) =>
+        this.loadScene(`props/${id}`, `models/props/${id}.glb`).catch((error) => {
+          console.warn(`No se pudo cargar el prop "${id}".`, error);
+          return null;
+        })
+      )
+    );
+    this.sharePropAtlas();
+  }
+
+  collectPropModels(ids: string[]): Map<string, THREE.Object3D> {
+    const models = new Map<string, THREE.Object3D>();
+    for (const id of ids) {
+      const scene = this.scenes.get(`props/${id}`);
+      if (scene) {
+        models.set(id, scene);
+      }
+    }
+    return models;
+  }
+
+  /**
+   * Cada prop trae embebida la misma imagen de 1024x1024. Sin esto habría 22 texturas
+   * idénticas en la GPU (unas 88 MB); con esto queda una sola.
+   */
+  private sharePropAtlas(): void {
+    let shared: THREE.Texture | null = null;
+    const redundant: THREE.Texture[] = [];
+
+    const adopt = (material: THREE.Material): void => {
+      const withMap = material as THREE.Material & { map?: THREE.Texture | null };
+      const map = withMap.map;
+      if (!map) {
+        return;
+      }
+      if (shared === null) {
+        shared = map;
+        return;
+      }
+      if (map !== shared) {
+        withMap.map = shared;
+        material.needsUpdate = true;
+        redundant.push(map);
+      }
+    };
+
+    for (const [key, scene] of this.scenes) {
+      if (!key.startsWith('props/')) {
+        continue;
+      }
+      scene.traverse((child) => {
+        const mesh = child as THREE.Mesh;
+        if (!(mesh as unknown as { isMesh?: boolean }).isMesh) {
+          return;
+        }
+        const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+        for (const material of materials) {
+          if (material) {
+            adopt(material);
+          }
+        }
+      });
+    }
+
+    for (const texture of redundant) {
+      texture.dispose();
+    }
+  }
 
   async load(id: string): Promise<LoadedModel> {
     const cached = this.cache.get(id);

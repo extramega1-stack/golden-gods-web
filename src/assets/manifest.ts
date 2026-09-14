@@ -67,6 +67,9 @@ export const BOT_MODELS: Record<string, string> = {
 
 export const POPULATION_MODELS = ['barbarian', 'rogue', 'knight', 'mage'];
 
+/** Semilla del reparto de decoración: fija para que el mundo sea siempre el mismo. */
+export const PROPS_SEED = 20260914;
+
 /** Todos los modelos que hay que precargar. */
 export const ALL_MODEL_IDS = [
   ...new Set([

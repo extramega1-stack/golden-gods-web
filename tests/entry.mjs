@@ -2,7 +2,7 @@ export { Navigation } from '../src/world/Navigation.ts';
 export { cellToWorld, worldToCell, levelToWorldY, clampToMap } from '../src/world/heightmap.ts';
 export { buildTerrainMesh, EDGE_DROP_LEVEL } from '../src/world/TerrainMesh.ts';
 export { Zone } from '../src/world/Zone.ts';
-export { STARTER_ZONE, STARTER_SPAWN, STARTER_SPAWNS } from '../src/data/zones.ts';
+export { STARTER_ZONE, STARTER_SPAWN, STARTER_SPAWNS, STARTER_SMITH } from '../src/data/zones.ts';
 export { TILE_SIZE, HEIGHT_STEP, MAX_STEP_LEVELS } from '../src/config/constants.ts';
 export { Tile } from '../src/types/index.ts';
 export { SceneRoot } from '../src/engine/SceneRoot.ts';
@@ -23,6 +23,14 @@ export {
   resolveAnimations,
 } from '../src/assets/manifest.ts';
 export { CombatSystem } from '../src/systems/CombatSystem.ts';
+export {
+  planProps,
+  PROP_TABLES,
+  PROP_DENSITY,
+  ALL_PROP_IDS,
+  regionOf,
+} from '../src/world/props.ts';
+export { createRng } from '../src/world/rng.ts';
 export { AISystem } from '../src/systems/AISystem.ts';
 export { SpawnSystem } from '../src/systems/SpawnSystem.ts';
 export { BossSystem } from '../src/systems/BossSystem.ts';

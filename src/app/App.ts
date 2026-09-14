@@ -10,6 +10,7 @@ import { HeroSelect } from '../ui/HeroSelect';
 import { World } from './World';
 import { AssetLoader } from '../assets/AssetLoader';
 import { ALL_MODEL_IDS } from '../assets/manifest';
+import { ALL_PROP_IDS } from '../world/props';
 import { getGod } from '../data/gods';
 import { SaveManager, type SaveData } from '../core/SaveManager';
 import { STARTER_SPAWN, STARTER_ZONE } from '../data/zones';
@@ -54,7 +55,7 @@ export class App {
     this.input = new InputManager(new Joystick(this.uiHost));
 
     // Se van cargando mientras el jugador mira el menú.
-    void this.loader.preload(ALL_MODEL_IDS);
+    void this.preloadAssets();
 
     this.spawn = cellToWorld(STARTER_SPAWN.col, STARTER_SPAWN.row);
     this.spawnY = levelToWorldY(this.zone.nav.levelAt(this.spawn.x, this.spawn.z));
@@ -80,6 +81,20 @@ export class App {
     );
   }
 
+  private preloadAssets(): Promise<unknown> {
+    return Promise.all([
+      this.loader.preload(ALL_MODEL_IDS),
+      this.loader.preloadProps(ALL_PROP_IDS),
+    ]);
+  }
+
+  private assetsReady(): boolean {
+    return (
+      ALL_MODEL_IDS.every((id) => this.loader.isReady(id)) &&
+      ALL_PROP_IDS.every((id) => this.loader.getScene(`props/${id}`) !== null)
+    );
+  }
+
   private async startGame(godId: string, save: SaveData | null): Promise<void> {
     if (this.starting) {
       return;
@@ -87,9 +102,9 @@ export class App {
     this.starting = true;
 
     try {
-      if (!ALL_MODEL_IDS.every((id) => this.loader.isReady(id))) {
+      if (!this.assetsReady()) {
         this.showLoading();
-        await this.loader.preload(ALL_MODEL_IDS);
+        await this.preloadAssets();
       }
     } finally {
       this.hideLoading();
@@ -111,7 +126,8 @@ export class App {
       this.input,
       getGod(godId),
       save,
-      this.loader
+      this.loader,
+      this.loader.collectPropModels(ALL_PROP_IDS)
     );
     world.onRestart = (loaded) => void this.startGame(loaded.godId, loaded);
     world.onExit = () => this.returnToMenu();
